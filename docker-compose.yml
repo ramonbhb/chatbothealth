@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: hra
+      POSTGRES_PASSWORD: hra_secret
+      POSTGRES_DB: hra
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hra -d hra"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://hra:hra_secret@db:5432/hra
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-change-in-production}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gemini/gemini-2.0-flash}
+      LLM_MODEL_LOCAL: ${LLM_MODEL_LOCAL:-ollama/llama3}
+      LOCAL_MODEL_ENABLED: ${LOCAL_MODEL_ENABLED:-false}
+      OLLAMA_API_BASE: ${OLLAMA_API_BASE:-http://host.docker.internal:11434}
+      MAX_ACTIVE_DATASETS: ${MAX_ACTIVE_DATASETS:-1}
+      INSTITUTION_NAME: ${INSTITUTION_NAME:-Research Institution}
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+      EXPORTS_DIR: /app/exports
+    volumes:
+      - exports_data:/app/exports
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  exports_data:
