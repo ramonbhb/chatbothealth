@@ -1,54 +1,54 @@
 export const DOC_SECTIONS = [
-  { key: 'background', label: 'Background' },
-  { key: 'research_questions', label: 'Research Questions / Hypotheses' },
-  { key: 'objectives', label: 'Objectives' },
-  { key: 'data_sources', label: 'Data Sources' },
-  { key: 'study_population', label: 'Study Population' },
-  { key: 'variables_endpoints', label: 'Variables & Endpoints' },
-  { key: 'methods_analysis', label: 'Methods / Analysis Plan' },
-  { key: 'expected_artifacts', label: 'Expected Artifacts & Deliverables' },
-  { key: 'analysis_application', label: 'Analysis Workflow' },
-  { key: 'data_governance_ethics', label: 'Data Governance & Ethics' },
-  { key: 'timeline', label: 'Timeline' },
-  { key: 'risks_limitations', label: 'Risks & Limitations' },
-  { key: 'references', label: 'References' },
+  { key: 'background', label: 'Contexto' },
+  { key: 'research_questions', label: 'Perguntas de Pesquisa / Hipóteses' },
+  { key: 'objectives', label: 'Objetivos' },
+  { key: 'data_sources', label: 'Fontes de Dados' },
+  { key: 'study_population', label: 'População do Estudo' },
+  { key: 'variables_endpoints', label: 'Variáveis e Desfechos' },
+  { key: 'methods_analysis', label: 'Métodos / Plano de Análise' },
+  { key: 'expected_artifacts', label: 'Artefatos e Entregáveis Esperados' },
+  { key: 'analysis_application', label: 'Fluxo de Análise' },
+  { key: 'data_governance_ethics', label: 'Governança de Dados e Ética' },
+  { key: 'timeline', label: 'Cronograma' },
+  { key: 'risks_limitations', label: 'Riscos e Limitações' },
+  { key: 'references', label: 'Referências' },
 ];
 
 export const DOC_SECTION_HINTS: Record<string, string> = {
-  data_sources: 'What data exists? Sources, tables, linkage, and access.',
-  variables_endpoints: 'Which fields matter? Predictors, outcomes, coding, missing data rules.',
-  methods_analysis: 'How will analysis run? Models, validation, sensitivity checks.',
-  expected_artifacts: 'What must the analysis produce? Tables, figures, models, exports, reports.',
-  analysis_application: 'How will the analysis be run? Steps, inputs, parameters, and outputs.',
+  data_sources: 'Quais dados existem? Fontes, tabelas, vínculos e acesso.',
+  variables_endpoints: 'Quais campos importam? Preditoras, desfechos, codificação e regras para dados ausentes.',
+  methods_analysis: 'Como a análise será executada? Modelos, validação e análises de sensibilidade.',
+  expected_artifacts: 'O que a análise deve produzir? Tabelas, gráficos, modelos, exportações e relatórios.',
+  analysis_application: 'Como a análise será executada na prática? Etapas, entradas, parâmetros e saídas.',
 };
 
 export const PROJECT_COLLECTION_GOALS = [
-  'Data — sources, cohort, variables, preparation',
-  'Methods — analysis plan, models, validation',
-  'Artifacts — tables, figures, models, exports',
-  'Workflow — how the analysis will be run',
+  'Dados — fontes, coorte, variáveis e preparação',
+  'Métodos — plano de análise, modelos e validação',
+  'Artefatos — tabelas, gráficos, modelos e exportações',
+  'Fluxo — como a análise será executada',
 ];
 
-export const DOC_STEPS = ['Import / Start', 'Guided Intake', 'Section Review', 'Quality Gate', 'Export'];
+export const DOC_STEPS = ['Importar / Início', 'Coleta Guiada', 'Revisão de Seções', 'Controle de Qualidade', 'Exportar'];
 
 export const DOC_STEP_KEYS = ['basics', 'intake', 'review', 'quality', 'export'] as const;
 
 export const DOC_STEP_LABELS: Record<string, string> = {
-  basics: 'Import / Start',
-  intake: 'Guided Intake',
-  review: 'Section Review',
-  quality: 'Quality Gate',
-  export: 'Export',
+  basics: 'Importar / Início',
+  intake: 'Coleta Guiada',
+  review: 'Revisão de Seções',
+  quality: 'Controle de Qualidade',
+  export: 'Exportar',
 };
 
 export const CLEAN_STEPS = [
-  'Select Dataset',
-  'Link Project',
-  'Explore Data',
-  'Planning Discussion',
-  'Script Draft',
-  'Validation',
-  'Export',
+  'Selecionar Conjunto',
+  'Vincular Projeto',
+  'Explorar Dados',
+  'Discussão de Planejamento',
+  'Rascunho do Script',
+  'Validação',
+  'Exportar',
 ];
 
 export const CLEAN_STEP_KEYS = [
@@ -62,21 +62,21 @@ export const CLEAN_STEP_KEYS = [
 ] as const;
 
 export const CLEAN_BUSINESS_TOPICS = [
-  'What analysis or predictive model are you preparing data for?',
-  'Who should be included or excluded from the cohort?',
-  'What filters or data quality rules should be applied?',
-  'Which tables need to be joined, and at what level?',
-  'What derived variables or transformations are needed?',
-  'How should missing values be handled?',
-  'What is the final output dataset grain for modeling?',
+  'Para qual análise ou modelo preditivo você está preparando os dados?',
+  'Quem deve ser incluído ou excluído da coorte?',
+  'Quais filtros ou regras de qualidade de dados devem ser aplicados?',
+  'Quais tabelas precisam ser unidas e em qual nível?',
+  'Quais variáveis derivadas ou transformações são necessárias?',
+  'Como os valores ausentes devem ser tratados?',
+  'Qual é a granularidade final do conjunto de dados para modelagem?',
 ];
 
 export const CLEAN_STEP_LABELS: Record<string, string> = {
-  select_dataset: 'Select Dataset',
-  link_project: 'Link Project',
-  schema_explore: 'Explore Data',
-  discussion: 'Planning Discussion',
-  script_draft: 'Script Draft',
-  validation: 'Validation',
-  export: 'Export',
+  select_dataset: 'Selecionar Conjunto',
+  link_project: 'Vincular Projeto',
+  schema_explore: 'Explorar Dados',
+  discussion: 'Discussão de Planejamento',
+  script_draft: 'Rascunho do Script',
+  validation: 'Validação',
+  export: 'Exportar',
 };

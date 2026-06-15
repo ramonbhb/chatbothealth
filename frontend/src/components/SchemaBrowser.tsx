@@ -18,7 +18,7 @@ interface SchemaBrowserProps {
 }
 
 export function SchemaBrowser({ tables }: SchemaBrowserProps) {
-  if (!tables.length) return <p className="muted">No tables in this dataset.</p>;
+  if (!tables.length) return <p className="muted">Nenhuma tabela neste conjunto de dados.</p>;
 
   return (
     <div className="schema-browser">
@@ -30,10 +30,10 @@ export function SchemaBrowser({ tables }: SchemaBrowserProps) {
           <table className="schema-table">
             <thead>
               <tr>
-                <th>Column</th>
-                <th>Type</th>
-                <th>Keys</th>
-                <th>Description</th>
+                <th>Coluna</th>
+                <th>Tipo</th>
+                <th>Chaves</th>
+                <th>Descrição</th>
               </tr>
             </thead>
             <tbody>
@@ -51,7 +51,7 @@ export function SchemaBrowser({ tables }: SchemaBrowserProps) {
                   </td>
                   <td>
                     {col.description}
-                    {col.valid_values && <small> Values: {col.valid_values}</small>}
+                    {col.valid_values && <small> Valores: {col.valid_values}</small>}
                   </td>
                 </tr>
               ))}

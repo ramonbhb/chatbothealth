@@ -13,9 +13,9 @@ export default function CleaningListPage() {
   return (
     <div className="page">
       <header className="header">
-        <Link to="/">← Dashboard</Link>
-        <h1>Cleaning Sessions</h1>
-        <Link to="/cleaning/new" className="btn">New Cleaning</Link>
+        <Link to="/">← Painel</Link>
+        <h1>Sessões de Limpeza</h1>
+        <Link to="/cleaning/new" className="btn">Nova Limpeza</Link>
       </header>
       <ul className="session-list">
         {sessions.map((s) => (
@@ -23,7 +23,7 @@ export default function CleaningListPage() {
             <Link to={`/cleaning/${s.id}`}>
               <strong>{s.title}</strong>
               <span>{CLEAN_STEP_LABELS[s.current_step] || s.current_step}</span>
-              <span>{new Date(s.updated_at).toLocaleString()}</span>
+              <span>{new Date(s.updated_at).toLocaleString('pt-BR')}</span>
             </Link>
           </li>
         ))}

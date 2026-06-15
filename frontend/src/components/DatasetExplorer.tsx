@@ -28,7 +28,7 @@ function formatCell(value: unknown): string {
 }
 
 export function DatasetExplorer({ tables }: DatasetExplorerProps) {
-  if (!tables.length) return <p className="muted">No tables in this dataset.</p>;
+  if (!tables.length) return <p className="muted">Nenhuma tabela neste conjunto de dados.</p>;
 
   return (
     <div className="dataset-explorer">
@@ -42,14 +42,14 @@ export function DatasetExplorer({ tables }: DatasetExplorerProps) {
               <strong>{table.name}</strong> — {table.description}
             </summary>
 
-            <h4 className="explorer-subheading">Structure</h4>
+            <h4 className="explorer-subheading">Estrutura</h4>
             <table className="schema-table">
               <thead>
                 <tr>
-                  <th>Column</th>
-                  <th>Type</th>
-                  <th>Keys</th>
-                  <th>Description</th>
+                  <th>Coluna</th>
+                  <th>Tipo</th>
+                  <th>Chaves</th>
+                  <th>Descrição</th>
                 </tr>
               </thead>
               <tbody>
@@ -67,7 +67,7 @@ export function DatasetExplorer({ tables }: DatasetExplorerProps) {
                     </td>
                     <td>
                       {col.description}
-                      {col.valid_values && <small> Values: {col.valid_values}</small>}
+                      {col.valid_values && <small> Valores: {col.valid_values}</small>}
                     </td>
                   </tr>
                 ))}
@@ -75,7 +75,7 @@ export function DatasetExplorer({ tables }: DatasetExplorerProps) {
             </table>
 
             <h4 className="explorer-subheading">
-              Sample data ({samples.length} of 10 rows)
+              Dados de amostra ({samples.length} de 10 linhas)
             </h4>
             {samples.length > 0 ? (
               <div className="sample-table-wrap">
@@ -99,7 +99,7 @@ export function DatasetExplorer({ tables }: DatasetExplorerProps) {
                 </table>
               </div>
             ) : (
-              <p className="muted">No sample rows available for this table.</p>
+              <p className="muted">Nenhuma linha de amostra disponível para esta tabela.</p>
             )}
           </details>
         );

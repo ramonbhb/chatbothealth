@@ -115,7 +115,7 @@ async def get_project(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
     return _session_out(session)
 
 
@@ -133,7 +133,7 @@ async def update_project(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
     if body.title is not None:
         session.title = body.title
     if body.current_step is not None:
@@ -165,7 +165,7 @@ async def save_draft(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
     if body.title is not None:
         session.title = body.title
     if body.current_step is not None:
@@ -204,14 +204,14 @@ async def import_full_text(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
 
     try:
         sections, model, debug = await split_full_text_into_sections(body.full_text)
     except RuntimeError as exc:
         raise HTTPException(
             status_code=502,
-            detail={"message": str(exc), "debug": {"stage": "llm_call", "hint": "Run backend/scripts/debug_import.py or GET /api/llm/status"}},
+            detail={"message": str(exc), "debug": {"stage": "llm_call", "hint": "Execute backend/scripts/debug_import.py ou GET /api/llm/status"}},
         ) from exc
 
     filled = sum(1 for v in sections.values() if v.strip())
@@ -219,7 +219,7 @@ async def import_full_text(
         raise HTTPException(
             status_code=502,
             detail={
-                "message": "Could not extract sections from the text. The AI response was empty or invalid.",
+                "message": "Não foi possível extrair seções do texto. A resposta da IA estava vazia ou inválida.",
                 "debug": debug,
             },
         )
@@ -236,7 +236,7 @@ async def import_full_text(
     note = ChatMessage(
         session_id=session.id,
         role="assistant",
-        content="Imported full project text and split it into predefined sections. Review and edit each section below.",
+        content="Texto completo do projeto importado e dividido em seções predefinidas. Revise e edite cada seção abaixo.",
     )
     db.add(note)
     await db.commit()
@@ -262,7 +262,7 @@ async def project_chat(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
 
     user_msg = ChatMessage(session_id=session.id, role="user", content=body.content)
     db.add(user_msg)
@@ -296,7 +296,7 @@ async def extract_section(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
     extracted = await extract_section_content(db, session, section_key)
     section_data = json.loads(session.section_data or "{}")
     section_data[section_key] = coerce_section_value(extracted.get("content", extracted))
@@ -319,7 +319,7 @@ async def quality_check(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
     checklist = await run_quality_check(session)
     session.quality_checklist = json.dumps(checklist)
     session.current_step = "quality"
@@ -343,7 +343,7 @@ async def export_project(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
 
     section_data = json.loads(session.section_data or "{}")
     doc = build_project_doc(

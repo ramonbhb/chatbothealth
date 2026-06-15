@@ -43,30 +43,30 @@ async def get_schema_context(db: AsyncSession, dataset_id: int, *, include_sampl
     )
     dataset = result.scalar_one_or_none()
     if not dataset:
-        return "No dataset found."
+        return "Conjunto de dados não encontrado."
 
-    lines = [f"Dataset: {dataset.name}", f"Description: {dataset.description}", ""]
+    lines = [f"Conjunto: {dataset.name}", f"Descrição: {dataset.description}", ""]
     for table in dataset.tables:
-        lines.append(f"Table: {table.name} — {table.description}")
+        lines.append(f"Tabela: {table.name} — {table.description}")
         for col in table.columns:
             phi = " [PHI]" if col.is_phi else ""
             lines.append(
                 f"  - {col.name} ({col.data_type}, nullable={col.nullable}){phi}: {col.description}"
             )
             if col.valid_values:
-                lines.append(f"    Valid values: {col.valid_values}")
+                lines.append(f"    Valores válidos: {col.valid_values}")
         for rel in table.relationships_from:
             lines.append(
-                f"  -> Join {rel.from_column} to {rel.to_table_id}.{rel.to_column} ({rel.relationship_type})"
+                f"  -> Unir {rel.from_column} com {rel.to_table_id}.{rel.to_column} ({rel.relationship_type})"
             )
         if include_samples:
             samples = parse_sample_rows(table.sample_rows)
             if samples:
-                lines.append(f"  Sample rows (up to {MAX_SAMPLE_ROWS}, de-identified examples):")
+                lines.append(f"  Linhas de amostra (até {MAX_SAMPLE_ROWS}, exemplos desidentificados):")
                 for i, row in enumerate(samples, 1):
                     lines.append(f"    {i}. {json.dumps(row)}")
             else:
-                lines.append("  Sample rows: (none provided)")
+                lines.append("  Linhas de amostra: (nenhuma fornecida)")
         lines.append("")
     return "\n".join(lines)
 
@@ -85,9 +85,9 @@ async def run_doc_intake(
         {
             "role": "system",
             "content": (
-                f"Current section: {current_section} ({SECTION_LABELS.get(current_section, current_section)}). "
-                f"Section goal: {guidance} "
-                f"Existing sections so far: {json.dumps({k: v for k, v in section_data.items() if not k.startswith('_')})}"
+                f"Seção atual: {current_section} ({SECTION_LABELS.get(current_section, current_section)}). "
+                f"Objetivo da seção: {guidance} "
+                f"Seções existentes até agora: {json.dumps({k: v for k, v in section_data.items() if not k.startswith('_')})}"
             ),
         },
     ]
@@ -111,9 +111,9 @@ async def extract_section_content(
         {
             "role": "system",
             "content": (
-                f"Extract and summarize content for the section '{section_key}' ({label}) from the conversation. "
-                "Use only information discussed — do not invent content. "
-                "Return JSON: {\"content\": \"...\", \"complete\": true/false, \"missing\": [\"...\"]}"
+                f"Extraia e resuma o conteúdo da seção '{section_key}' ({label}) a partir da conversa. "
+                "Use apenas informações discutidas — não invente conteúdo. "
+                "Retorne JSON: {\"content\": \"...\", \"complete\": true/false, \"missing\": [\"...\"]}"
             ),
         },
     ]
@@ -134,12 +134,12 @@ async def split_full_text_into_sections(full_text: str) -> tuple[dict[str, str],
     keys_list = ", ".join(PROJECT_DOC_SECTIONS)
     system_content = (
         f"{DOC_SYSTEM_PROMPT}\n\n"
-        "Split the user's full project document text into predefined sections. "
-        "Use ONLY the provided text — do not invent content. "
-        f"Section labels: {json.dumps(section_spec, indent=2)}. "
-        f"You MUST return a single JSON object using EXACTLY these snake_case keys: {keys_list}. "
-        "Each value must be a string with the extracted text for that section. "
-        "Use an empty string if the section is not present in the source text."
+        "Divida o texto completo do documento do projeto do usuário em seções predefinidas. "
+        "Use APENAS o texto fornecido — não invente conteúdo. "
+        f"Rótulos das seções: {json.dumps(section_spec, indent=2)}. "
+        f"Você DEVE retornar um único objeto JSON usando EXATAMENTE estas chaves snake_case: {keys_list}. "
+        "Cada valor deve ser uma string com o texto extraído para essa seção. "
+        "Use string vazia se a seção não estiver presente no texto original."
     )
     messages = [
         {"role": "system", "content": system_content},
@@ -191,9 +191,9 @@ async def run_quality_check(session: WizardSession) -> dict:
         {
             "role": "system",
             "content": (
-                "Evaluate the project document sections against this checklist. "
-                f"Checklist: {QUALITY_CHECKLIST_ITEMS}. "
-                "Return JSON: {\"items\": [{\"item\": \"...\", \"passed\": bool, \"note\": \"...\"}]}"
+                "Avalie as seções do documento do projeto com base nesta lista de verificação. "
+                f"Lista: {QUALITY_CHECKLIST_ITEMS}. "
+                "Retorne JSON: {\"items\": [{\"item\": \"...\", \"passed\": bool, \"note\": \"...\"}]}"
             ),
         },
         {"role": "user", "content": json.dumps(section_data)},
@@ -205,7 +205,7 @@ async def run_quality_check(session: WizardSession) -> dict:
                 {
                     "item": item,
                     "passed": bool(section_data),
-                    "note": "Automated fallback check",
+                    "note": "Verificação automática de fallback",
                 }
                 for item in QUALITY_CHECKLIST_ITEMS
             ]
@@ -224,7 +224,7 @@ async def run_clean_discussion(
 
     messages = [
         {"role": "system", "content": CLEAN_SYSTEM_PROMPT},
-        {"role": "system", "content": f"Dataset structure and samples:\n{schema_context}"},
+        {"role": "system", "content": f"Estrutura e amostras do conjunto:\n{schema_context}"},
     ]
     for msg in session.messages[-20:]:
         messages.append({"role": msg.role, "content": msg.content})
@@ -237,14 +237,14 @@ async def run_clean_discussion(
 
 async def run_clean_kickoff(db: AsyncSession, session: WizardSession) -> str:
     if not session.dataset_id:
-        return "Please select a dataset first to explore structure and samples."
+        return "Selecione um conjunto de dados primeiro para explorar estrutura e amostras."
 
     schema_context = await get_schema_context(db, session.dataset_id, include_samples=True)
     messages = [
         {"role": "system", "content": CLEAN_SYSTEM_PROMPT},
         {"role": "system", "content": CLEAN_KICKOFF_PROMPT},
-        {"role": "system", "content": f"Dataset structure and samples:\n{schema_context}"},
-        {"role": "user", "content": "Please open our cleaning and modeling planning session."},
+        {"role": "system", "content": f"Estrutura e amostras do conjunto:\n{schema_context}"},
+        {"role": "user", "content": "Por favor, abra nossa sessão de planejamento de limpeza e modelagem."},
     ]
     reply, _, _ = await llm_gateway.complete(messages)
     session.llm_model_used = llm_gateway.model
@@ -261,13 +261,13 @@ async def generate_clean_script(
 
     messages = [
         {"role": "system", "content": CLEAN_SYSTEM_PROMPT},
-        {"role": "system", "content": f"Schema context:\n{schema_context}"},
+        {"role": "system", "content": f"Contexto do esquema:\n{schema_context}"},
         {
             "role": "system",
             "content": (
-                "Generate a complete data_clean.py script based on the conversation. "
-                "Use pandas and SQLAlchemy. Include a main() function. "
-                "Return ONLY Python code, no markdown fences."
+                "Gere um script data_clean.py completo com base na conversa. "
+                "Use pandas e SQLAlchemy. Inclua uma função main(). "
+                "Retorne APENAS código Python, sem blocos markdown."
             ),
         },
     ]

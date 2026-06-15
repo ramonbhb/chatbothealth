@@ -24,7 +24,7 @@ PATIENT_SAMPLES = [
     {"patient_id": 1005, "birth_year": 1990, "sex": "F"},
     {"patient_id": 1006, "birth_year": 1968, "sex": "M"},
     {"patient_id": 1007, "birth_year": 1975, "sex": "F"},
-    {"patient_id": 1008, "birth_year": 1988, "sex": "Other"},
+    {"patient_id": 1008, "birth_year": 1988, "sex": "Outro"},
     {"patient_id": 1009, "birth_year": 1960, "sex": "M"},
     {"patient_id": 1010, "birth_year": 1995, "sex": "F"},
 ]
@@ -50,9 +50,48 @@ async def _ensure_sample_rows_column() -> None:
         )
 
 
+async def _demo_dataset(db):
+    for name in ("Conjunto de Saúde de Exemplo", "Sample Health Dataset"):
+        result = await db.execute(select(Dataset).where(Dataset.name == name))
+        dataset = result.scalar_one_or_none()
+        if dataset:
+            return dataset
+    return None
+
+
+async def _migrate_demo_dataset_labels(db) -> None:
+    dataset = await _demo_dataset(db)
+    if not dataset:
+        return
+    dataset.name = "Conjunto de Saúde de Exemplo"
+    dataset.description = "Conjunto de dados de demonstração para desenvolvimento e testes"
+
+    for table_name, description in [
+        ("patients", "Registros demográficos e de inclusão de pacientes"),
+        ("encounters", "Registros de encontros clínicos"),
+    ]:
+        table_result = await db.execute(
+            select(CatalogTable).where(
+                CatalogTable.dataset_id == dataset.id,
+                CatalogTable.name == table_name,
+            )
+        )
+        table = table_result.scalar_one_or_none()
+        if table:
+            table.description = description
+
+
 async def _apply_demo_samples(db) -> None:
+    dataset = await _demo_dataset(db)
+    if not dataset:
+        return
     for table_name, samples in [("patients", PATIENT_SAMPLES), ("encounters", ENCOUNTER_SAMPLES)]:
-        result = await db.execute(select(CatalogTable).where(CatalogTable.name == table_name))
+        result = await db.execute(
+            select(CatalogTable).where(
+                CatalogTable.dataset_id == dataset.id,
+                CatalogTable.name == table_name,
+            )
+        )
         table = result.scalar_one_or_none()
         if table and (not table.sample_rows or table.sample_rows == "[]"):
             table.sample_rows = json.dumps(samples)
@@ -73,7 +112,7 @@ async def seed() -> None:
             db.add(
                 User(
                     email="admin@hra.local",
-                    full_name="System Admin",
+                    full_name="Administrador do Sistema",
                     hashed_password=get_password_hash("admin12345"),
                     role=UserRole.admin,
                 )
@@ -81,7 +120,7 @@ async def seed() -> None:
             db.add(
                 User(
                     email="researcher@hra.local",
-                    full_name="Demo Researcher",
+                    full_name="Pesquisador Demo",
                     hashed_password=get_password_hash("research12345"),
                     role=UserRole.researcher,
                 )
@@ -98,11 +137,11 @@ async def seed() -> None:
             if not existing.scalar_one_or_none():
                 db.add(AppSetting(key=key, value=value))
 
-        dataset_result = await db.execute(select(Dataset).where(Dataset.name == "Sample Health Dataset"))
+        dataset_result = await db.execute(select(Dataset).where(Dataset.name == "Conjunto de Saúde de Exemplo"))
         if not dataset_result.scalar_one_or_none():
             dataset = Dataset(
-                name="Sample Health Dataset",
-                description="Demo dataset for development and testing",
+                name="Conjunto de Saúde de Exemplo",
+                description="Conjunto de dados de demonstração para desenvolvimento e testes",
                 enabled=True,
             )
             db.add(dataset)
@@ -111,13 +150,13 @@ async def seed() -> None:
             patients = CatalogTable(
                 dataset_id=dataset.id,
                 name="patients",
-                description="Patient demographic and enrollment records",
+                description="Registros demográficos e de inclusão de pacientes",
                 sample_rows=json.dumps(PATIENT_SAMPLES),
             )
             encounters = CatalogTable(
                 dataset_id=dataset.id,
                 name="encounters",
-                description="Clinical encounter records",
+                description="Registros de encontros clínicos",
                 sample_rows=json.dumps(ENCOUNTER_SAMPLES),
             )
             db.add_all([patients, encounters])
@@ -131,22 +170,22 @@ async def seed() -> None:
                         data_type="INTEGER",
                         nullable=False,
                         is_primary_key=True,
-                        description="Unique patient identifier",
+                        description="Identificador único do paciente",
                     ),
                     CatalogColumn(
                         table_id=patients.id,
                         name="birth_year",
                         data_type="INTEGER",
                         nullable=True,
-                        description="Year of birth",
+                        description="Ano de nascimento",
                     ),
                     CatalogColumn(
                         table_id=patients.id,
                         name="sex",
                         data_type="VARCHAR(10)",
                         nullable=True,
-                        valid_values="M, F, Other, Unknown",
-                        description="Biological sex at birth",
+                        valid_values="M, F, Outro, Desconhecido",
+                        description="Sexo biológico ao nascer",
                     ),
                     CatalogColumn(
                         table_id=encounters.id,
@@ -154,7 +193,7 @@ async def seed() -> None:
                         data_type="INTEGER",
                         nullable=False,
                         is_primary_key=True,
-                        description="Unique encounter identifier",
+                        description="Identificador único do encontro",
                     ),
                     CatalogColumn(
                         table_id=encounters.id,
@@ -162,26 +201,28 @@ async def seed() -> None:
                         data_type="INTEGER",
                         nullable=False,
                         is_foreign_key=True,
-                        description="Foreign key to patients.patient_id",
+                        description="Chave estrangeira para patients.patient_id",
                     ),
                     CatalogColumn(
                         table_id=encounters.id,
                         name="encounter_date",
                         data_type="DATE",
                         nullable=False,
-                        description="Date of clinical encounter",
+                        description="Data do encontro clínico",
                     ),
                     CatalogColumn(
                         table_id=encounters.id,
                         name="diagnosis_code",
                         data_type="VARCHAR(20)",
                         nullable=True,
-                        description="Primary ICD-10 diagnosis code",
+                        description="Código principal de diagnóstico CID-10",
                     ),
                 ]
             )
         else:
             await _apply_demo_samples(db)
+
+        await _migrate_demo_dataset_labels(db)
 
         await db.commit()
 

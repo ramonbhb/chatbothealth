@@ -43,12 +43,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     const detail = err.detail;
-    let message = 'Request failed';
+    let message = 'Falha na requisição';
     if (typeof detail === 'string') {
       message = detail;
     } else if (detail && typeof detail === 'object') {
-      const msg = detail.message || 'Request failed';
-      const debug = detail.debug ? `\n\nDebug:\n${JSON.stringify(detail.debug, null, 2)}` : '';
+      const msg = detail.message || 'Falha na requisição';
+      const debug = detail.debug ? `\n\nDepuração:\n${JSON.stringify(detail.debug, null, 2)}` : '';
       message = `${msg}${debug}`;
     }
     throw new Error(message);
@@ -106,7 +106,7 @@ export const api = {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    if (!res.ok) throw new Error('Export failed');
+    if (!res.ok) throw new Error('Falha na exportação');
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -152,7 +152,7 @@ export const api = {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    if (!res.ok) throw new Error('Export failed');
+    if (!res.ok) throw new Error('Falha na exportação');
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

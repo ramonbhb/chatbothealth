@@ -20,20 +20,20 @@ export default function ProjectListPage() {
   return (
     <div className="page">
       <header className="header">
-        <Link to="/">← Dashboard</Link>
-        <h1>Project Sessions</h1>
-        <Link to="/projects/new" className="btn">New Project</Link>
+        <Link to="/">← Painel</Link>
+        <h1>Sessões de Projeto</h1>
+        <Link to="/projects/new" className="btn">Novo Projeto</Link>
       </header>
       {error && <p className="error">{error}</p>}
-      {sessions.length === 0 && <p className="muted">No saved sessions yet. Start a new project to create one.</p>}
+      {sessions.length === 0 && <p className="muted">Nenhuma sessão salva ainda. Inicie um novo projeto para criar uma.</p>}
       <ul className="session-list">
         {sessions.map((s) => (
           <li key={s.id}>
             <Link to={`/projects/${s.id}`}>
               <strong>{s.title}</strong>
               <span>{DOC_STEP_LABELS[s.current_step] || s.current_step}</span>
-              <span>{sectionCount(s)} sections filled</span>
-              <span>{new Date(s.updated_at).toLocaleString()}</span>
+              <span>{sectionCount(s)} seções preenchidas</span>
+              <span>{new Date(s.updated_at).toLocaleString('pt-BR')}</span>
             </Link>
           </li>
         ))}

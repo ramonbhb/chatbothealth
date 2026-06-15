@@ -112,7 +112,7 @@ class TableRelationshipOut(TableRelationshipCreate):
 
 class WizardSessionCreate(BaseModel):
     wizard_type: str
-    title: str = "Untitled"
+    title: str = "Sem título"
 
 
 class WizardSessionUpdate(BaseModel):

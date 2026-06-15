@@ -8,33 +8,33 @@ export default function DashboardPage() {
     <div className="page">
       <header className="header">
         <div>
-          <h1>Health Research Assistant</h1>
-          <p>Welcome, {user?.full_name}</p>
+          <h1>Assistente de Pesquisa em Saúde</h1>
+          <p>Bem-vindo(a), {user?.full_name}</p>
         </div>
         <div className="header-actions">
-          {user?.role === 'admin' && <Link to="/admin" className="btn secondary">Admin</Link>}
-          <button onClick={logout} className="btn secondary">Logout</button>
+          {user?.role === 'admin' && <Link to="/admin" className="btn secondary">Administração</Link>}
+          <button onClick={logout} className="btn secondary">Sair</button>
         </div>
       </header>
 
       <div className="dashboard-grid">
         <Link to="/projects/new" className="dashboard-card">
-          <h2>Project Document</h2>
+          <h2>Documento do Projeto</h2>
           <p>
-            Document your study: data, methods, and expected outputs (tables, figures, models).
+            Documente seu estudo: dados, métodos e saídas esperadas (tabelas, gráficos, modelos).
           </p>
-          <span className="card-action">Start wizard →</span>
+          <span className="card-action">Iniciar assistente →</span>
         </Link>
         <Link to="/cleaning/new" className="dashboard-card">
-          <h2>Data Cleaning</h2>
-          <p>Design and generate a data_clean.py script based on your dataset schema and cleaning requirements.</p>
-          <span className="card-action">Start wizard →</span>
+          <h2>Limpeza de Dados</h2>
+          <p>Projete e gere um script data_clean.py com base no esquema do conjunto de dados e nas regras de limpeza.</p>
+          <span className="card-action">Iniciar assistente →</span>
         </Link>
       </div>
 
       <div className="dashboard-links">
-        <Link to="/projects">View project sessions</Link>
-        <Link to="/cleaning">View cleaning sessions</Link>
+        <Link to="/projects">Ver sessões de projeto</Link>
+        <Link to="/cleaning">Ver sessões de limpeza</Link>
       </div>
     </div>
   );

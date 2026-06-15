@@ -19,7 +19,7 @@ export default function AdminPage() {
       setSettings(await api.listSettings());
       setAudit(await api.listAudit());
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load admin data');
+      setError(e instanceof Error ? e.message : 'Falha ao carregar dados de administração');
     }
   };
 
@@ -33,15 +33,15 @@ export default function AdminPage() {
   return (
     <div className="page admin-page">
       <header className="header">
-        <Link to="/">← Dashboard</Link>
-        <h1>Admin — Metadata Catalog</h1>
+        <Link to="/">← Painel</Link>
+        <h1>Administração — Catálogo de Metadados</h1>
       </header>
       {error && <p className="error">{error}</p>}
 
       <section className="admin-section">
-        <h2>App Settings</h2>
+        <h2>Configurações do App</h2>
         <table className="schema-table">
-          <thead><tr><th>Key</th><th>Value</th><th></th></tr></thead>
+          <thead><tr><th>Chave</th><th>Valor</th><th></th></tr></thead>
           <tbody>
             {settings.map((s) => (
               <tr key={s.key}>
@@ -55,7 +55,7 @@ export default function AdminPage() {
                     }}
                   />
                 </td>
-                <td><small>blur to save</small></td>
+                <td><small>saia do campo para salvar</small></td>
               </tr>
             ))}
           </tbody>
@@ -63,22 +63,22 @@ export default function AdminPage() {
       </section>
 
       <section className="admin-section">
-        <h2>Datasets</h2>
+        <h2>Conjuntos de Dados</h2>
         <div className="inline-form">
-          <input placeholder="Name" value={newDataset.name} onChange={(e) => setNewDataset({ ...newDataset, name: e.target.value })} />
-          <input placeholder="Description" value={newDataset.description} onChange={(e) => setNewDataset({ ...newDataset, description: e.target.value })} />
+          <input placeholder="Nome" value={newDataset.name} onChange={(e) => setNewDataset({ ...newDataset, name: e.target.value })} />
+          <input placeholder="Descrição" value={newDataset.description} onChange={(e) => setNewDataset({ ...newDataset, description: e.target.value })} />
           <button onClick={async () => {
             await api.createDataset({ ...newDataset, enabled: true });
             setNewDataset({ name: '', description: '' });
             load();
-          }}>Add Dataset</button>
+          }}>Adicionar Conjunto</button>
         </div>
         <ul>
           {datasets.map((d) => (
             <li key={d.id}>
               <button onClick={() => loadTables(d.id)}>{d.name}</button>
-              {d.enabled ? ' (enabled)' : ' (disabled)'}
-              <button className="btn danger small" onClick={async () => { await api.deleteDataset(d.id); load(); }}>Delete</button>
+              {d.enabled ? ' (ativo)' : ' (inativo)'}
+              <button className="btn danger small" onClick={async () => { await api.deleteDataset(d.id); load(); }}>Excluir</button>
             </li>
           ))}
         </ul>
@@ -86,22 +86,22 @@ export default function AdminPage() {
 
       {selectedDataset && (
         <section className="admin-section">
-          <h2>Tables for Dataset #{selectedDataset}</h2>
+          <h2>Tabelas do Conjunto #{selectedDataset}</h2>
           <div className="inline-form">
-            <input placeholder="Table name" value={newTable.name} onChange={(e) => setNewTable({ ...newTable, name: e.target.value })} />
-            <input placeholder="Description" value={newTable.description} onChange={(e) => setNewTable({ ...newTable, description: e.target.value })} />
+            <input placeholder="Nome da tabela" value={newTable.name} onChange={(e) => setNewTable({ ...newTable, name: e.target.value })} />
+            <input placeholder="Descrição" value={newTable.description} onChange={(e) => setNewTable({ ...newTable, description: e.target.value })} />
             <button onClick={async () => {
               await api.createTable(selectedDataset, newTable);
               setNewTable({ name: '', description: '' });
               loadTables(selectedDataset);
-            }}>Add Table</button>
+            }}>Adicionar Tabela</button>
           </div>
           {tables.map((t) => (
             <details key={t.id as number}>
               <summary>{t.name as string}</summary>
               <p>{t.description as string}</p>
               <table className="schema-table">
-                <thead><tr><th>Column</th><th>Type</th><th>Description</th><th></th></tr></thead>
+                <thead><tr><th>Coluna</th><th>Tipo</th><th>Descrição</th><th></th></tr></thead>
                 <tbody>
                   {((t.columns as Array<Record<string, unknown>>) || []).map((c) => (
                     <tr key={c.id as number}>
@@ -111,15 +111,15 @@ export default function AdminPage() {
                       <td><button className="btn danger small" onClick={async () => {
                         await api.deleteColumn(c.id as number);
                         loadTables(selectedDataset);
-                      }}>Delete</button></td>
+                      }}>Excluir</button></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               <div className="inline-form">
-                <input placeholder="Column name" onChange={(e) => setNewColumn({ ...newColumn, tableId: t.id as number, name: e.target.value })} />
-                <input placeholder="Type" value={newColumn.data_type} onChange={(e) => setNewColumn({ ...newColumn, data_type: e.target.value })} />
-                <input placeholder="Description" onChange={(e) => setNewColumn({ ...newColumn, tableId: t.id as number, description: e.target.value })} />
+                <input placeholder="Nome da coluna" onChange={(e) => setNewColumn({ ...newColumn, tableId: t.id as number, name: e.target.value })} />
+                <input placeholder="Tipo" value={newColumn.data_type} onChange={(e) => setNewColumn({ ...newColumn, data_type: e.target.value })} />
+                <input placeholder="Descrição" onChange={(e) => setNewColumn({ ...newColumn, tableId: t.id as number, description: e.target.value })} />
                 <button onClick={async () => {
                   await api.createColumn(newColumn.tableId, {
                     name: newColumn.name,
@@ -127,7 +127,7 @@ export default function AdminPage() {
                     description: newColumn.description,
                   });
                   loadTables(selectedDataset);
-                }}>Add Column</button>
+                }}>Adicionar Coluna</button>
               </div>
             </details>
           ))}
@@ -135,9 +135,9 @@ export default function AdminPage() {
       )}
 
       <section className="admin-section">
-        <h2>Audit Log (recent)</h2>
+        <h2>Registro de Auditoria (recentes)</h2>
         <table className="schema-table">
-          <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Resource</th></tr></thead>
+          <thead><tr><th>Horário</th><th>Usuário</th><th>Ação</th><th>Recurso</th></tr></thead>
           <tbody>
             {audit.slice(0, 50).map((log) => (
               <tr key={log.id as number}>

@@ -86,7 +86,7 @@ async def create_dataset(
         if len(enabled_count.scalars().all()) >= settings.max_active_datasets:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Maximum active datasets ({settings.max_active_datasets}) reached",
+                detail=f"Número máximo de conjuntos ativos ({settings.max_active_datasets}) atingido",
             )
     dataset = Dataset(name=body.name, description=body.description, enabled=body.enabled)
     db.add(dataset)
@@ -113,7 +113,7 @@ async def update_dataset(
     result = await db.execute(select(Dataset).where(Dataset.id == dataset_id))
     dataset = result.scalar_one_or_none()
     if not dataset:
-        raise HTTPException(status_code=404, detail="Dataset not found")
+        raise HTTPException(status_code=404, detail="Conjunto de dados não encontrado")
     if body.name is not None:
         dataset.name = body.name
     if body.description is not None:
@@ -134,7 +134,7 @@ async def delete_dataset(
     result = await db.execute(select(Dataset).where(Dataset.id == dataset_id))
     dataset = result.scalar_one_or_none()
     if not dataset:
-        raise HTTPException(status_code=404, detail="Dataset not found")
+        raise HTTPException(status_code=404, detail="Conjunto de dados não encontrado")
     await db.delete(dataset)
     await db.commit()
 
@@ -191,7 +191,7 @@ async def delete_column(
     result = await db.execute(select(CatalogColumn).where(CatalogColumn.id == column_id))
     column = result.scalar_one_or_none()
     if not column:
-        raise HTTPException(status_code=404, detail="Column not found")
+        raise HTTPException(status_code=404, detail="Coluna não encontrada")
     await db.delete(column)
     await db.commit()
 

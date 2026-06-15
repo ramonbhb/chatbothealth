@@ -23,7 +23,7 @@ async def login(
     result = await db.execute(select(User).where(User.email == form_data.username))
     user = result.scalar_one_or_none()
     if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect credentials")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais incorretas")
     token = create_access_token({"sub": str(user.id)})
     await log_audit(
         db,
@@ -46,7 +46,7 @@ async def login_json(
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
     if not user or not verify_password(body.password, user.hashed_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect credentials")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais incorretas")
     token = create_access_token({"sub": str(user.id)})
     await log_audit(
         db,
@@ -64,10 +64,10 @@ async def login_json(
 async def register(body: UserCreate, db: AsyncSession = Depends(get_db)):
     settings = get_settings()
     if not settings.allow_registration:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Registration disabled")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cadastro desabilitado")
     existing = await db.execute(select(User).where(User.email == body.email))
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="E-mail já cadastrado")
     role = UserRole.admin if body.role == "admin" else UserRole.researcher
     user = User(
         email=body.email,

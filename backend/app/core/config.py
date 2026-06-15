@@ -13,7 +13,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "Health Research Assistant"
+    app_name: str = "Assistente de Pesquisa em Saúde"
     secret_key: str = "change-me-in-production-use-openssl-rand"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 480
@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     session_retention_days: int = 90
 
     max_active_datasets: int = 1
-    institution_name: str = "Research Institution"
+    institution_name: str = "Instituição de Pesquisa"
     allow_registration: bool = False
 
     cors_origins: str = "http://localhost:5173,http://localhost:3000"

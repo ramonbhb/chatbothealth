@@ -18,7 +18,7 @@ export default function LoginPage() {
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : 'Falha no login');
     } finally {
       setLoading(false);
     }
@@ -27,21 +27,21 @@ export default function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-card">
-        <h1>Health Research Assistant</h1>
-        <p className="subtitle">Guided project documentation and data cleaning</p>
+        <h1>Assistente de Pesquisa em Saúde</h1>
+        <p className="subtitle">Documentação guiada de projetos e limpeza de dados</p>
         <form onSubmit={handleSubmit}>
           <label>
-            Email
+            E-mail
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </label>
           <label>
-            Password
+            Senha
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </label>
           {error && <p className="error">{error}</p>}
-          <button type="submit" disabled={loading}>{loading ? 'Signing in...' : 'Sign in'}</button>
+          <button type="submit" disabled={loading}>{loading ? 'Entrando...' : 'Entrar'}</button>
         </form>
-        <p className="demo-hint">Demo: admin@hra.local / admin12345 or researcher@hra.local / research12345</p>
+        <p className="demo-hint">Demo: admin@hra.local / admin12345 ou researcher@hra.local / research12345</p>
       </div>
     </div>
   );

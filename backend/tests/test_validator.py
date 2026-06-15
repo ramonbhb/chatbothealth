@@ -28,7 +28,7 @@ def test_valid_script_passes():
 def test_empty_script_fails():
     result = validate_script("")
     assert result["valid"] is False
-    assert "empty" in result["issues"][0].lower()
+    assert "vazio" in result["issues"][0].lower()
 
 
 def test_forbidden_drop_detected():

@@ -10,7 +10,7 @@ import ProjectListPage from './pages/ProjectListPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="page"><p>Loading...</p></div>;
+  if (loading) return <div className="page"><p>Carregando...</p></div>;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
@@ -24,7 +24,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   const { user, loading } = useAuth();
 
-  if (loading) return <div className="page"><p>Loading...</p></div>;
+  if (loading) return <div className="page"><p>Carregando...</p></div>;
 
   return (
     <Routes>

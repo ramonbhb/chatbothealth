@@ -73,7 +73,7 @@ export default function CleanWizardPage() {
   const stepIndex = session ? STEP_INDEX[session.current_step] ?? 0 : 0;
 
   const createSession = async () => {
-    const s = await api.createCleaning(title || 'Untitled Cleaning');
+    const s = await api.createCleaning(title || 'Limpeza sem título');
     navigate(`/cleaning/${s.id}`, { replace: true });
     setSession(s);
     setTitle(s.title);
@@ -106,7 +106,7 @@ export default function CleanWizardPage() {
       script_content: session.script_content,
     });
     setSession(updated);
-    setSaveMessage(`Draft saved at ${new Date(updated.updated_at).toLocaleString()}`);
+    setSaveMessage(`Rascunho salvo em ${new Date(updated.updated_at).toLocaleString('pt-BR')}`);
     if (exit) navigate('/cleaning');
   };
 
@@ -134,7 +134,7 @@ export default function CleanWizardPage() {
         await api.cleaningKickoff(session.id);
         if (!cancelled) await refresh();
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Could not start planning discussion');
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Não foi possível iniciar a discussão de planejamento');
       } finally {
         if (!cancelled) setKickoffLoading(false);
       }
@@ -161,7 +161,7 @@ export default function CleanWizardPage() {
         current_step: 'script_draft',
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Script generation failed');
+      setError(e instanceof Error ? e.message : 'Falha na geração do script');
     } finally {
       setGenerating(false);
     }
@@ -175,30 +175,30 @@ export default function CleanWizardPage() {
       const result = await api.validateScript(session.id);
       setSession({ ...session, validation_result: result, current_step: 'validation' });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Validation failed');
+      setError(e instanceof Error ? e.message : 'Falha na validação');
     } finally {
       setValidating(false);
     }
   };
 
-  if (loading) return <div className="page"><p>Loading...</p></div>;
+  if (loading) return <div className="page"><p>Carregando...</p></div>;
 
   return (
     <div className="page wizard-page">
       <header className="header">
         <div>
-          <Link to="/cleaning">← All sessions</Link>
-          <h1>Data Cleaning Wizard</h1>
+          <Link to="/cleaning">← Todas as sessões</Link>
+          <h1>Assistente de Limpeza de Dados</h1>
           {session && (
             <p className="muted">
-              Session #{session.id} · Last updated {new Date(session.updated_at).toLocaleString()}
+              Sessão #{session.id} · Última atualização {new Date(session.updated_at).toLocaleString('pt-BR')}
             </p>
           )}
         </div>
         {session && (
           <div className="header-actions">
-            <button type="button" className="btn secondary" onClick={() => saveDraft(false)}>Save draft</button>
-            <button type="button" className="btn secondary" onClick={() => saveDraft(true)}>Save &amp; exit</button>
+            <button type="button" className="btn secondary" onClick={() => saveDraft(false)}>Salvar rascunho</button>
+            <button type="button" className="btn secondary" onClick={() => saveDraft(true)}>Salvar e sair</button>
           </div>
         )}
       </header>
@@ -214,18 +214,18 @@ export default function CleanWizardPage() {
 
       {!session && (
         <div className="wizard-section">
-          <h2>New Cleaning Session</h2>
+          <h2>Nova Sessão de Limpeza</h2>
           <label>
-            Session Title
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Cohort cleaning pipeline" />
+            Título da Sessão
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Pipeline de limpeza da coorte" />
           </label>
-          <button type="button" onClick={createSession}>Continue</button>
+          <button type="button" onClick={createSession}>Continuar</button>
         </div>
       )}
 
       {session && stepIndex === 0 && (
         <div className="wizard-section">
-          <h2>Select Dataset</h2>
+          <h2>Selecionar Conjunto de Dados</h2>
           {datasets.map((d) => (
             <button
               key={d.id}
@@ -235,12 +235,12 @@ export default function CleanWizardPage() {
             >
               <strong>{d.name}</strong>
               <p>{d.description}</p>
-              {session.dataset_id === d.id && <span className="muted">Currently selected</span>}
+              {session.dataset_id === d.id && <span className="muted">Selecionado atualmente</span>}
             </button>
           ))}
           {session.dataset_id && (
             <div className="wizard-actions">
-              <button type="button" onClick={() => goToStep('link_project')}>Continue</button>
+              <button type="button" onClick={() => goToStep('link_project')}>Continuar</button>
             </div>
           )}
         </div>
@@ -248,43 +248,43 @@ export default function CleanWizardPage() {
 
       {session && stepIndex === 1 && (
         <div className="wizard-section">
-          <h2>Link Project (Optional)</h2>
-          <p className="muted">Optionally associate this cleaning session with a project document session.</p>
+          <h2>Vincular Projeto (Opcional)</h2>
+          <p className="muted">Opcionalmente, associe esta sessão de limpeza a uma sessão de documento de projeto.</p>
           <div className="wizard-actions">
-            <button type="button" className="btn secondary" onClick={() => goToStep('select_dataset')}>Back</button>
-            <button type="button" onClick={() => goToStep('schema_explore')}>Skip — Explore Data</button>
+            <button type="button" className="btn secondary" onClick={() => goToStep('select_dataset')}>Voltar</button>
+            <button type="button" onClick={() => goToStep('schema_explore')}>Pular — Explorar Dados</button>
           </div>
         </div>
       )}
 
       {session && stepIndex === 2 && (
         <div className="wizard-section">
-          <h2>Explore Data</h2>
+          <h2>Explorar Dados</h2>
           <p className="muted">
-            Review the database structure and up to 10 sample rows per table (de-identified examples).
-            Use this to understand what is available before planning cleaning and modeling steps.
+            Revise a estrutura do banco de dados e até 10 linhas de amostra por tabela (exemplos desidentificados).
+            Use isso para entender o que está disponível antes de planejar limpeza e modelagem.
           </p>
           {schema ? (
             <DatasetExplorer tables={schema.tables} />
           ) : (
-            <LoadingPanel message="Loading dataset structure and samples…" />
+            <LoadingPanel message="Carregando estrutura e amostras do conjunto de dados…" />
           )}
           <div className="wizard-actions">
-            <button type="button" className="btn secondary" onClick={() => goToStep('link_project')}>Back</button>
-            <button type="button" onClick={startDiscussion}>Continue to Planning Discussion</button>
+            <button type="button" className="btn secondary" onClick={() => goToStep('link_project')}>Voltar</button>
+            <button type="button" onClick={startDiscussion}>Continuar para Discussão de Planejamento</button>
           </div>
         </div>
       )}
 
       {session && stepIndex === 3 && (
         <div className="wizard-section split">
-          <h2>Planning Discussion</h2>
+          <h2>Discussão de Planejamento</h2>
           <p className="muted">
-            Work through your modeling and cleaning goals in plain language. The assistant will ask about
-            cohort definition, filters, joins, and the final dataset you need.
+            Trabalhe seus objetivos de modelagem e limpeza em linguagem simples. O assistente perguntará sobre
+            definição da coorte, filtros, junções e o conjunto final de dados necessário.
           </p>
           <div className="topic-checklist">
-            <strong>Topics we will cover</strong>
+            <strong>Tópicos que abordaremos</strong>
             <ul>
               {CLEAN_BUSINESS_TOPICS.map((topic) => (
                 <li key={topic}>{topic}</li>
@@ -292,27 +292,27 @@ export default function CleanWizardPage() {
             </ul>
           </div>
           {kickoffLoading && session.messages.length === 0 ? (
-            <LoadingPanel message="Reviewing your data structure and samples…" />
+            <LoadingPanel message="Analisando a estrutura e amostras dos seus dados…" />
           ) : (
             <ChatPanel
               messages={session.messages}
               onSend={handleChat}
-              placeholder="Describe your modeling goal, cohort rules, filters, or transformations..."
+              placeholder="Descreva seu objetivo de modelagem, regras da coorte, filtros ou transformações..."
             />
           )}
           <div className="wizard-actions">
-            <button type="button" className="btn secondary" onClick={() => goToStep('schema_explore')}>Back</button>
+            <button type="button" className="btn secondary" onClick={() => goToStep('schema_explore')}>Voltar</button>
             <button type="button" onClick={generateScript} disabled={generating}>
-              {generating ? 'Generating…' : 'Generate Script'}
+              {generating ? 'Gerando…' : 'Gerar Script'}
             </button>
           </div>
-          {generating && <LoadingPanel message="Generating data_clean.py from your discussion…" />}
+          {generating && <LoadingPanel message="Gerando data_clean.py a partir da sua discussão…" />}
         </div>
       )}
 
       {session && stepIndex === 4 && (
         <div className="wizard-section">
-          <h2>Script Draft</h2>
+          <h2>Rascunho do Script</h2>
           <textarea
             className="code-editor"
             value={session.script_content}
@@ -326,22 +326,22 @@ export default function CleanWizardPage() {
             rows={20}
           />
           <div className="wizard-actions">
-            <button type="button" className="btn secondary" onClick={() => goToStep('discussion')}>Back</button>
+            <button type="button" className="btn secondary" onClick={() => goToStep('discussion')}>Voltar</button>
             <button type="button" onClick={validateScript} disabled={validating}>
-              {validating ? 'Validating…' : 'Validate Script'}
+              {validating ? 'Validando…' : 'Validar Script'}
             </button>
           </div>
-          {validating && <LoadingPanel message="Validating script syntax and safety…" />}
+          {validating && <LoadingPanel message="Validando sintaxe e segurança do script…" />}
         </div>
       )}
 
       {session && stepIndex === 5 && (
         <div className="wizard-section">
-          <h2>Validation Results</h2>
+          <h2>Resultados da Validação</h2>
           <div className={`validation-result ${session.validation_result?.valid ? 'valid' : 'invalid'}`}>
-            <p>Syntax: {session.validation_result?.syntax_ok ? 'OK' : 'Failed'}</p>
-            <p>Safety: {session.validation_result?.safety_ok ? 'OK' : 'Failed'}</p>
-            <p>Lint: {session.validation_result?.lint_ok ? 'OK' : 'Failed'}</p>
+            <p>Sintaxe: {session.validation_result?.syntax_ok ? 'OK' : 'Falhou'}</p>
+            <p>Segurança: {session.validation_result?.safety_ok ? 'OK' : 'Falhou'}</p>
+            <p>Lint: {session.validation_result?.lint_ok ? 'OK' : 'Falhou'}</p>
             <ul>
               {((session.validation_result?.issues as string[]) || []).map((issue, i) => (
                 <li key={i}>{issue}</li>
@@ -349,20 +349,20 @@ export default function CleanWizardPage() {
             </ul>
           </div>
           <div className="wizard-actions">
-            <button type="button" className="btn secondary" onClick={() => goToStep('script_draft')}>Back to script</button>
-            <button type="button" onClick={() => goToStep('export')}>Proceed to Export</button>
+            <button type="button" className="btn secondary" onClick={() => goToStep('script_draft')}>Voltar ao script</button>
+            <button type="button" onClick={() => goToStep('export')}>Ir para Exportação</button>
           </div>
         </div>
       )}
 
       {session && stepIndex === 6 && (
         <div className="wizard-section">
-          <h2>Export</h2>
-          <p>Download data_clean.py for your execution team.</p>
+          <h2>Exportar</h2>
+          <p>Baixe o data_clean.py para sua equipe de execução.</p>
           <div className="wizard-actions">
-            <button type="button" className="btn secondary" onClick={() => goToStep('validation')}>Back</button>
-            <button type="button" className="btn secondary" onClick={() => goToStep('script_draft')}>Edit script</button>
-            <button type="button" onClick={() => api.exportCleaning(session.id)}>Download data_clean.py</button>
+            <button type="button" className="btn secondary" onClick={() => goToStep('validation')}>Voltar</button>
+            <button type="button" className="btn secondary" onClick={() => goToStep('script_draft')}>Editar script</button>
+            <button type="button" onClick={() => api.exportCleaning(session.id)}>Baixar data_clean.py</button>
           </div>
         </div>
       )}

@@ -15,124 +15,127 @@ PROJECT_DOC_SECTIONS = [
 ]
 
 SECTION_LABELS = {
-    "background": "Background",
-    "research_questions": "Research Questions / Hypotheses",
-    "objectives": "Objectives",
-    "data_sources": "Data Sources",
-    "study_population": "Study Population",
-    "variables_endpoints": "Variables & Endpoints",
-    "methods_analysis": "Methods / Analysis Plan",
-    "expected_artifacts": "Expected Artifacts & Deliverables",
-    "analysis_application": "Analysis Workflow",
-    "data_governance_ethics": "Data Governance & Ethics",
-    "timeline": "Timeline",
-    "risks_limitations": "Risks & Limitations",
-    "references": "References",
+    "background": "Contexto",
+    "research_questions": "Perguntas de Pesquisa / Hipóteses",
+    "objectives": "Objetivos",
+    "data_sources": "Fontes de Dados",
+    "study_population": "População do Estudo",
+    "variables_endpoints": "Variáveis e Desfechos",
+    "methods_analysis": "Métodos / Plano de Análise",
+    "expected_artifacts": "Artefatos e Entregáveis Esperados",
+    "analysis_application": "Fluxo de Análise",
+    "data_governance_ethics": "Governança de Dados e Ética",
+    "timeline": "Cronograma",
+    "risks_limitations": "Riscos e Limitações",
+    "references": "Referências",
 }
 
-# What we must learn from the researcher (flexible how they provide it)
 COLLECTION_PRIORITIES = [
-    "Data: sources, cohort, variables, endpoints, and how data will be prepared",
-    "Methods: statistical/ML approach, validation, and reproducibility",
-    "Artifacts: tables, figures, models, and other outputs the analysis must produce",
-    "Workflow: how the analysis will be run, with what inputs and outputs",
+    "Dados: fontes, coorte, variáveis, desfechos e como os dados serão preparados",
+    "Métodos: abordagem estatística/ML, validação e reprodutibilidade",
+    "Artefatos: tabelas, gráficos, modelos e outras saídas que a análise deve produzir",
+    "Fluxo: como a análise será executada, com quais entradas e saídas",
 ]
 
 SECTION_GUIDANCE = {
-    "background": "Clinical/scientific context and why this study matters.",
-    "research_questions": "Specific, testable questions or hypotheses.",
-    "objectives": "Primary and secondary objectives aligned with the questions.",
+    "background": "Contexto clínico/científico e por que este estudo é relevante.",
+    "research_questions": "Perguntas ou hipóteses específicas e testáveis.",
+    "objectives": "Objetivos primários e secundários alinhados às perguntas.",
     "data_sources": (
-        "Datasets, tables, linkage, refresh cadence, access, and governance."
+        "Conjuntos de dados, tabelas, vínculos, periodicidade de atualização, acesso e governança."
     ),
-    "study_population": "Inclusion/exclusion criteria, cohort definition, and index dates.",
+    "study_population": "Critérios de inclusão/exclusão, definição da coorte e datas de índice.",
     "variables_endpoints": (
-        "Predictors, outcomes, covariates, derived fields, and endpoint definitions. "
-        "Be explicit about types, coding, and missing-data expectations."
+        "Preditoras, desfechos, covariáveis, campos derivados e definições de endpoints. "
+        "Seja explícito sobre tipos, codificação e expectativas para dados ausentes."
     ),
     "methods_analysis": (
-        "Statistical/ML methods, model families, validation strategy, sensitivity analyses, "
-        "and reproducibility."
+        "Métodos estatísticos/ML, famílias de modelos, estratégia de validação, análises de sensibilidade "
+        "e reprodutibilidade."
     ),
     "expected_artifacts": (
-        "Concrete deliverables the analysis must produce: summary tables, figures/plots, "
-        "fitted models, scoring outputs, export formats (CSV, PDF), and any dashboards or "
-        "reports. Name each artifact and what decision it supports."
+        "Entregáveis concretos que a análise deve produzir: tabelas resumo, gráficos, "
+        "modelos ajustados, saídas de pontuação, formatos de exportação (CSV, PDF) e relatórios. "
+        "Nomeie cada artefato e qual decisão ele apoia."
     ),
     "analysis_application": (
-        "How the analysis will be executed in practice: workflows, inputs (parameters, filters, "
-        "cohort selectors), outputs (link to expected artifacts), steps, validation, and "
-        "error handling."
+        "Como a análise será executada na prática: fluxos de trabalho, entradas (parâmetros, filtros, "
+        "seletores de coorte), saídas (ligadas aos artefatos esperados), etapas, validação e "
+        "tratamento de erros."
     ),
-    "data_governance_ethics": "Ethics approval, privacy, consent, and data handling.",
-    "timeline": "Key milestones and delivery timeline.",
-    "risks_limitations": "Scientific, data-quality, and operational risks.",
-    "references": "Prior work, protocols, and relevant literature.",
+    "data_governance_ethics": "Aprovação ética, privacidade, consentimento e tratamento de dados.",
+    "timeline": "Marcos principais e cronograma de entrega.",
+    "risks_limitations": "Riscos científicos, de qualidade de dados e operacionais.",
+    "references": "Trabalhos anteriores, protocolos e literatura relevante.",
 }
 
-DOC_SYSTEM_PROMPT = """You are a health data science assistant helping researchers document a project.
+DOC_SYSTEM_PROMPT = """Você é um assistente de ciência de dados em saúde ajudando pesquisadores a documentar um projeto.
 
-The researcher may provide information in any order or style they prefer — do not force a rigid
-interview. Help them describe their study clearly and completely.
+O pesquisador pode fornecer informações em qualquer ordem ou estilo — não force uma entrevista rígida.
+Ajude-o a descrever o estudo de forma clara e completa.
 
-Prioritize collecting:
-1. DATA — sources, cohort, variables, endpoints, cleaning/preparation needs
-2. METHODS — analysis plan, models, validation, reproducibility
-3. ARTIFACTS — tables, figures, models, exports, and other outputs the analysis must produce
-4. WORKFLOW — how the analysis will be run, what inputs are needed, and what outputs are expected
+Priorize coletar:
+1. DADOS — fontes, coorte, variáveis, desfechos e necessidades de limpeza/preparação
+2. MÉTODOS — plano de análise, modelos, validação e reprodutibilidade
+3. ARTEFATOS — tabelas, gráficos, modelos, exportações e outras saídas que a análise deve produzir
+4. FLUXO — como a análise será executada, quais entradas são necessárias e quais saídas são esperadas
 
-Do not mention that software or an application will be built for the researcher. Focus on the
-science: data, methods, and deliverables.
+Não mencione que software ou uma aplicação será construída para o pesquisador. Foque na ciência:
+dados, métodos e entregáveis.
 
-Ask focused follow-up questions only when key information is missing. Never invent data sources,
-variables, or ethics approvals. Keep responses concise and professional."""
+Faça perguntas de acompanhamento focadas apenas quando informações-chave estiverem faltando.
+Nunca invente fontes de dados, variáveis ou aprovações éticas. Mantenha respostas concisas e profissionais.
+
+Sempre responda em português brasileiro."""
 
 QUALITY_CHECKLIST_ITEMS = [
-    "Research goals and questions are clear",
-    "Data sources and access are described",
-    "Study population and key variables/endpoints are defined",
-    "Methods/analysis plan is specified and feasible",
-    "Expected artifacts are listed (tables, figures, models, exports)",
-    "Analysis workflow describes inputs, steps, and outputs",
-    "Ethics and data governance are addressed",
-    "Risks and limitations are acknowledged",
+    "Objetivos e perguntas de pesquisa estão claros",
+    "Fontes de dados e acesso estão descritos",
+    "População do estudo e variáveis/desfechos principais estão definidos",
+    "Métodos/plano de análise estão especificados e são viáveis",
+    "Artefatos esperados estão listados (tabelas, gráficos, modelos, exportações)",
+    "O fluxo de análise descreve entradas, etapas e saídas",
+    "Ética e governança de dados estão abordadas",
+    "Riscos e limitações estão reconhecidos",
 ]
 
-CLEAN_SYSTEM_PROMPT = """You are a health data science assistant helping researchers plan data cleaning
-and preparation for modeling. You have access to the database structure and sample rows (de-identified
-examples only — treat them as illustrative, not exhaustive).
+CLEAN_SYSTEM_PROMPT = """Você é um assistente de ciência de dados em saúde ajudando pesquisadores a planejar
+a limpeza e preparação de dados para modelagem. Você tem acesso à estrutura do banco de dados e linhas de
+amostra (apenas exemplos desidentificados — trate-os como ilustrativos, não exaustivos).
 
-Guide the conversation in a practical business flow:
-1. GOAL — What analysis or model are they building? What is the target population?
-2. COHORT — Inclusion/exclusion rules, date ranges, index events
-3. FILTERING — Row-level filters, quality checks, duplicate handling
-4. JOINS — Which tables to link and on what keys
-5. TRANSFORMS — Derived variables, recoding, aggregations, missing data rules
-6. MODELING PREP — Final grain (patient, encounter, etc.), feature set, train/validation split needs
+Conduza a conversa em um fluxo prático de negócio:
+1. OBJETIVO — Qual análise ou modelo estão construindo? Qual é a população-alvo?
+2. COORTE — Regras de inclusão/exclusão, intervalos de datas, eventos de índice
+3. FILTRAGEM — Filtros em nível de linha, verificações de qualidade, tratamento de duplicatas
+4. JUNÇÕES — Quais tabelas vincular e em quais chaves
+5. TRANSFORMAÇÕES — Variáveis derivadas, recodificação, agregações e regras para dados ausentes
+6. PREPARAÇÃO PARA MODELAGEM — Granularidade final (paciente, encontro etc.), conjunto de features, necessidades de divisão treino/validação
 
-Ask one or two focused questions at a time. Reference actual table and column names from the schema.
-Never assume columns exist unless listed. Prefer pandas and SQLAlchemy. Do not suggest destructive SQL.
-Keep language accessible to researchers, not only engineers."""
+Faça uma ou duas perguntas focadas por vez. Referencie nomes reais de tabelas e colunas do esquema.
+Nunca assuma que colunas existem a menos que estejam listadas. Prefira pandas e SQLAlchemy. Não sugira SQL destrutivo.
+Mantenha a linguagem acessível para pesquisadores, não apenas engenheiros.
 
-CLEAN_KICKOFF_PROMPT = """Based on the dataset structure and sample rows provided, open the cleaning
-planning conversation. Briefly summarize what you see in the data (tables, key fields, sample patterns).
-Then ask about their modeling/cleaning goal and cohort definition. Keep it concise — 3-5 sentences plus
-2-3 clear questions."""
+Sempre responda em português brasileiro."""
+
+CLEAN_KICKOFF_PROMPT = """Com base na estrutura do conjunto de dados e nas linhas de amostra fornecidas, abra a
+conversa de planejamento de limpeza. Resuma brevemente o que você vê nos dados (tabelas, campos principais,
+padrões nas amostras). Em seguida, pergunte sobre o objetivo de modelagem/limpeza e a definição da coorte.
+Seja conciso — 3 a 5 frases mais 2 ou 3 perguntas claras. Responda em português brasileiro."""
 
 CLEAN_BUSINESS_TOPICS = [
-    "What analysis or predictive model are you preparing data for?",
-    "Who should be included or excluded from the cohort?",
-    "What filters or data quality rules should be applied?",
-    "Which tables need to be joined, and at what level (patient, encounter, etc.)?",
-    "What derived variables or transformations are needed for modeling?",
-    "How should missing values be handled?",
-    "What is the final output dataset grain and key columns for modeling?",
+    "Para qual análise ou modelo preditivo você está preparando os dados?",
+    "Quem deve ser incluído ou excluído da coorte?",
+    "Quais filtros ou regras de qualidade de dados devem ser aplicados?",
+    "Quais tabelas precisam ser unidas e em qual nível (paciente, encontro etc.)?",
+    "Quais variáveis derivadas ou transformações são necessárias para modelagem?",
+    "Como os valores ausentes devem ser tratados?",
+    "Qual é a granularidade final do conjunto de dados e as colunas-chave para modelagem?",
 ]
 
 SCRIPT_TEMPLATE_HEADER = '''"""
-Data cleaning script generated by Health Research Assistant.
-Review carefully before running against production databases.
-Execute only in an approved environment with appropriate access controls.
+Script de limpeza de dados gerado pelo Assistente de Pesquisa em Saúde.
+Revise cuidadosamente antes de executar em bancos de dados de produção.
+Execute apenas em ambiente aprovado com controles de acesso adequados.
 """
 
 import os

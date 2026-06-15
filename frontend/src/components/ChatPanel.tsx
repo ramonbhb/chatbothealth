@@ -26,11 +26,11 @@ export function ChatPanel({ messages, onSend, disabled, placeholder }: ChatPanel
     <div className="chat-panel">
       <div className="chat-messages">
         {messages.length === 0 && (
-          <p className="chat-empty">Start the conversation. The assistant will ask guided questions.</p>
+          <p className="chat-empty">Inicie a conversa. O assistente fará perguntas guiadas.</p>
         )}
         {messages.map((msg, i) => (
           <div key={i} className={`chat-msg ${msg.role}`}>
-            <strong>{msg.role === 'user' ? 'You' : 'Assistant'}</strong>
+            <strong>{msg.role === 'user' ? 'Você' : 'Assistente'}</strong>
             <p>{msg.content}</p>
           </div>
         ))}
@@ -39,7 +39,7 @@ export function ChatPanel({ messages, onSend, disabled, placeholder }: ChatPanel
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={placeholder || 'Type your message...'}
+          placeholder={placeholder || 'Digite sua mensagem...'}
           disabled={disabled || sending}
           rows={3}
           onKeyDown={(e) => {
@@ -50,7 +50,7 @@ export function ChatPanel({ messages, onSend, disabled, placeholder }: ChatPanel
           }}
         />
         <button onClick={handleSend} disabled={disabled || sending || !input.trim()}>
-          {sending ? 'Sending...' : 'Send'}
+          {sending ? 'Enviando...' : 'Enviar'}
         </button>
       </div>
     </div>

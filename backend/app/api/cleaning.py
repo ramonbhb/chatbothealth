@@ -79,7 +79,7 @@ async def get_dataset_schema(
     )
     dataset = result.scalar_one_or_none()
     if not dataset:
-        raise HTTPException(status_code=404, detail="Dataset not found")
+        raise HTTPException(status_code=404, detail="Conjunto de dados não encontrado")
     return {
         "id": dataset.id,
         "name": dataset.name,
@@ -163,7 +163,7 @@ async def get_cleaning_session(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
     return _session_out(session)
 
 
@@ -181,7 +181,7 @@ async def update_cleaning_session(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
     if body.title is not None:
         session.title = body.title
     if body.current_step is not None:
@@ -214,7 +214,7 @@ async def cleaning_chat(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
 
     user_msg = ChatMessage(session_id=session.id, role="user", content=body.content)
     db.add(user_msg)
@@ -247,7 +247,7 @@ async def cleaning_kickoff(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
     if session.messages:
         last = session.messages[-1]
         return ChatMessageOut(
@@ -285,7 +285,7 @@ async def generate_script(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
     script = await generate_clean_script(db, session)
     session.current_step = "script_draft"
     await db.commit()
@@ -307,7 +307,7 @@ async def validate_cleaning_script(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
     validation = validate_script(session.script_content)
     session.validation_result = json.dumps(validation)
     session.current_step = "validation"
@@ -331,7 +331,7 @@ async def export_cleaning(
     )
     session = result.scalar_one_or_none()
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
 
     script_path = os.path.join(settings.exports_dir, f"data_clean_{session.id}.py")
     readme_path = os.path.join(settings.exports_dir, f"data_clean_{session.id}_README.md")

@@ -19,14 +19,14 @@ def build_project_doc(
     settings = get_settings()
     doc = Document()
 
-    doc.add_heading(title or "Health Data Science Project", level=0)
-    doc.add_paragraph(f"Institution: {settings.institution_name}")
-    doc.add_paragraph(f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
-    doc.add_paragraph(f"Author: {user_email}")
-    doc.add_paragraph(f"Session ID: {session_id}")
+    doc.add_heading(title or "Projeto de Ciência de Dados em Saúde", level=0)
+    doc.add_paragraph(f"Instituição: {settings.institution_name}")
+    doc.add_paragraph(f"Gerado em: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+    doc.add_paragraph(f"Autor: {user_email}")
+    doc.add_paragraph(f"ID da Sessão: {session_id}")
     doc.add_paragraph("")
     doc.add_paragraph(
-        "Purpose: Document the study's data, methods, expected artifacts, and analysis workflow."
+        "Finalidade: Documentar os dados, métodos, artefatos esperados e fluxo de análise do estudo."
     )
     doc.add_paragraph("")
 
@@ -36,12 +36,12 @@ def build_project_doc(
         content = section_data.get(section_key, "")
         if isinstance(content, dict):
             content = content.get("content", json.dumps(content, indent=2))
-        doc.add_paragraph(str(content) if content else "[Not provided]")
+        doc.add_paragraph(str(content) if content else "[Não informado]")
 
     footer = doc.sections[0].footer
     footer_para = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
     footer_para.text = (
-        f"HRA Export | {user_email} | Session {session_id} | Model: {model_used} | "
+        f"Exportação HRA | {user_email} | Sessão {session_id} | Modelo: {model_used} | "
         f"{datetime.now(timezone.utc).isoformat()}"
     )
     for run in footer_para.runs:

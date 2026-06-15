@@ -39,7 +39,7 @@ class LLMGateway:
         settings = get_settings()
         if not settings.gemini_api_key and not settings.local_model_enabled:
             raise RuntimeError(
-                "GEMINI_API_KEY is not configured. Set it in the project .env file and restart the backend."
+                "GEMINI_API_KEY não está configurada. Defina no arquivo .env do projeto e reinicie o backend."
             )
 
         kwargs: dict = {
@@ -56,19 +56,19 @@ class LLMGateway:
         except RateLimitError as exc:
             logger.warning("LLM rate limit: %s", exc)
             raise RuntimeError(
-                "Gemini API rate limit exceeded (free tier ~20 requests/day). "
-                "Wait about a minute and retry, or check usage at https://ai.dev/rate-limit. "
-                f"Details: {exc}"
+                "Limite de taxa da API Gemini excedido (plano gratuito ~20 requisições/dia). "
+                "Aguarde cerca de um minuto e tente novamente, ou verifique o uso em https://ai.dev/rate-limit. "
+                f"Detalhes: {exc}"
             ) from exc
         except Exception as exc:
             logger.exception("LLM call failed")
-            raise RuntimeError(f"LLM call failed: {exc}") from exc
+            raise RuntimeError(f"Falha na chamada ao LLM: {exc}") from exc
 
         content = response.choices[0].message.content or ""
         if not content.strip():
             raise RuntimeError(
-                "LLM returned an empty response. Try switching LLM_MODEL in .env "
-                "(e.g. gemini/gemini-2.5-flash). Check GET /api/llm/status"
+                "O LLM retornou uma resposta vazia. Tente alterar LLM_MODEL no .env "
+                "(ex.: gemini/gemini-2.5-flash). Verifique GET /api/llm/status"
             )
 
         usage = getattr(response, "usage", None)

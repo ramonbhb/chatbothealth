@@ -54,7 +54,7 @@ export default function DocWizardPage() {
 
   const ensureSession = async (): Promise<WizardSession> => {
     if (session) return session;
-    const s = await api.createProject(title || 'Untitled Project');
+    const s = await api.createProject(title || 'Projeto sem título');
     navigate(`/projects/${s.id}`, { replace: true });
     setSession(s);
     setTitle(s.title);
@@ -77,7 +77,7 @@ export default function DocWizardPage() {
     };
     const saved = await api.saveProjectDraft(session.id, payload);
     setSession(saved);
-    setSaveMessage(`Draft saved at ${new Date(saved.updated_at).toLocaleString()}`);
+    setSaveMessage(`Rascunho salvo em ${new Date(saved.updated_at).toLocaleString('pt-BR')}`);
     if (exit) navigate('/projects');
   };
 
@@ -94,7 +94,7 @@ export default function DocWizardPage() {
 
   const importFullText = async () => {
     if (fullText.trim().length < 20) {
-      setError('Please paste at least 20 characters to import.');
+      setError('Cole pelo menos 20 caracteres para importar.');
       return;
     }
     setImporting(true);
@@ -105,14 +105,14 @@ export default function DocWizardPage() {
       const updated = await api.importFullText(s.id, fullText.trim());
       const filled = countFilledSections(updated.section_data);
       if (filled === 0) {
-        setError('Import failed: no sections were extracted. Please try again or fill sections manually.');
+        setError('Falha na importação: nenhuma seção foi extraída. Tente novamente ou preencha as seções manualmente.');
         return;
       }
       setSession(updated);
       setFullText('');
-      setSaveMessage(`Imported into ${filled} section${filled === 1 ? '' : 's'}. Review and edit below.`);
+      setSaveMessage(`Importado em ${filled} seção${filled === 1 ? '' : 'ões'}. Revise e edite abaixo.`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Import failed');
+      setError(e instanceof Error ? e.message : 'Falha na importação');
     } finally {
       setImporting(false);
     }
@@ -122,7 +122,7 @@ export default function DocWizardPage() {
     setError('');
     await ensureSession();
     await goToStep('review');
-    setSaveMessage('Fill in each section manually below. You can switch to guided chat anytime.');
+    setSaveMessage('Preencha cada seção manualmente abaixo. Você pode mudar para o chat guiado a qualquer momento.');
   };
 
   const startGuidedChat = async () => {
@@ -156,11 +156,11 @@ export default function DocWizardPage() {
       const preview = content.length > 120 ? `${content.slice(0, 120)}…` : content;
       setSaveMessage(
         content
-          ? `Copied into "${sectionLabel(sectionKey)}": ${preview}`
-          : `No content extracted for "${sectionLabel(sectionKey)}". Continue the chat and try again.`
+          ? `Copiado para "${sectionLabel(sectionKey)}": ${preview}`
+          : `Nenhum conteúdo extraído para "${sectionLabel(sectionKey)}". Continue o chat e tente novamente.`
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Extract failed');
+      setError(e instanceof Error ? e.message : 'Falha na extração');
     } finally {
       setExtracting(false);
     }
@@ -174,7 +174,7 @@ export default function DocWizardPage() {
       await api.qualityCheck(session.id);
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Quality check failed');
+      setError(e instanceof Error ? e.message : 'Falha no controle de qualidade');
     } finally {
       setChecklistLoading(false);
     }
@@ -194,7 +194,7 @@ export default function DocWizardPage() {
 
   const hasSectionContent = (key: string) => Boolean(String(session?.section_data[key] || '').trim());
 
-  if (loading) return <div className="page"><p>Loading...</p></div>;
+  if (loading) return <div className="page"><p>Carregando...</p></div>;
 
   const showImportScreen = !session || stepIndex === 0;
 
@@ -202,14 +202,14 @@ export default function DocWizardPage() {
     <div className="page wizard-page">
       <header className="header">
         <div>
-          <Link to="/projects">← All sessions</Link>
-          <h1>Project Document Wizard</h1>
-          {session && <p className="muted">Session #{session.id} · Last updated {new Date(session.updated_at).toLocaleString()}</p>}
+          <Link to="/projects">← Todas as sessões</Link>
+          <h1>Assistente de Documento do Projeto</h1>
+          {session && <p className="muted">Sessão #{session.id} · Última atualização {new Date(session.updated_at).toLocaleString('pt-BR')}</p>}
         </div>
         {session && (
           <div className="header-actions">
-            <button type="button" className="btn secondary" onClick={() => saveDraft(false)}>Save draft</button>
-            <button type="button" className="btn secondary" onClick={() => saveDraft(true)}>Save &amp; exit</button>
+            <button type="button" className="btn secondary" onClick={() => saveDraft(false)}>Salvar rascunho</button>
+            <button type="button" className="btn secondary" onClick={() => saveDraft(true)}>Salvar e sair</button>
           </div>
         )}
       </header>
@@ -220,13 +220,13 @@ export default function DocWizardPage() {
       {!session && <Stepper steps={DOC_STEPS} current={0} />}
 
       <div className="purpose-banner">
-        <strong>Goal:</strong> Capture a complete picture of your study —
+        <strong>Objetivo:</strong> Capturar uma visão completa do seu estudo —
         <ul className="collection-goals">
           {PROJECT_COLLECTION_GOALS.map((g) => (
             <li key={g}>{g}</li>
           ))}
         </ul>
-        Paste full text, use guided chat, or fill sections manually — whatever works best for you.
+        Cole o texto completo, use o chat guiado ou preencha as seções manualmente — o que funcionar melhor para você.
       </div>
 
       {saveMessage && <p className="save-message">{saveMessage}</p>}
@@ -234,13 +234,13 @@ export default function DocWizardPage() {
 
       {showImportScreen && (
         <div className="wizard-section">
-          <h2>Start your project document</h2>
+          <h2>Inicie o documento do seu projeto</h2>
           <p className="muted">
-            Provide your project in whatever form you prefer. We focus on data, methods,
-            and deliverables (tables, figures, models).
+            Forneça seu projeto no formato que preferir. Focamos em dados, métodos
+            e entregáveis (tabelas, gráficos, modelos).
           </p>
           <label>
-            Project Title
+            Título do Projeto
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -250,32 +250,32 @@ export default function DocWizardPage() {
                   setSession(updated);
                 }
               }}
-              placeholder="My Health DS Project"
+              placeholder="Meu Projeto de Ciência de Dados em Saúde"
             />
           </label>
 
           <div className="import-panel import-panel-primary">
-            <h3>Paste your full project text</h3>
+            <h3>Cole o texto completo do projeto</h3>
             <p className="muted">
-              Paste a complete project description and the assistant will split it into all predefined sections automatically.
+              Cole uma descrição completa do projeto e o assistente dividirá automaticamente em todas as seções predefinidas.
             </p>
             <textarea
               value={fullText}
               onChange={(e) => setFullText(e.target.value)}
               rows={14}
-              placeholder="Paste your full project text here..."
+              placeholder="Cole o texto completo do seu projeto aqui..."
             />
             <button type="button" onClick={importFullText} disabled={importing || fullText.trim().length < 20}>
-              {importing ? 'Splitting with AI…' : 'Import & split into sections'}
+              {importing ? 'Dividindo com IA…' : 'Importar e dividir em seções'}
             </button>
           </div>
 
           <div className="wizard-actions import-alternatives">
             <button type="button" className="btn secondary" onClick={skipToManual}>
-              Skip — fill sections manually
+              Pular — preencher seções manualmente
             </button>
             <button type="button" className="btn secondary" onClick={startGuidedChat}>
-              Skip — use guided chat instead
+              Pular — usar chat guiado
             </button>
           </div>
         </div>
@@ -284,17 +284,17 @@ export default function DocWizardPage() {
       {session && stepIndex === 1 && (
         <div className="wizard-section split">
           <div>
-            <h2>Guided Intake</h2>
+            <h2>Coleta Guiada</h2>
             <p className="muted">
-              Chat about one section at a time. The chat is <strong>not</strong> copied automatically —
-              click <strong>Extract section</strong> to copy the conversation into the section field below.
+              Converse sobre uma seção por vez. O chat <strong>não</strong> é copiado automaticamente —
+              clique em <strong>Extrair seção</strong> para copiar a conversa para o campo da seção abaixo.
             </p>
-            <p>Current focus: <strong>{sectionLabel(activeSection)}</strong></p>
+            <p>Foco atual: <strong>{sectionLabel(activeSection)}</strong></p>
             {DOC_SECTION_HINTS[activeSection] && (
               <p className="section-hint">{DOC_SECTION_HINTS[activeSection]}</p>
             )}
             {hasSectionContent(activeSection) && (
-              <p className="section-filled">✓ This section already has saved content</p>
+              <p className="section-filled">✓ Esta seção já tem conteúdo salvo</p>
             )}
             <div className="section-tabs">
               {DOC_SECTIONS.map((s) => (
@@ -310,7 +310,7 @@ export default function DocWizardPage() {
             </div>
             {hasSectionContent(activeSection) && (
               <div className="extract-preview">
-                <strong>Saved content preview</strong>
+                <strong>Prévia do conteúdo salvo</strong>
                 <p>{String(session.section_data[activeSection]).slice(0, 300)}{String(session.section_data[activeSection]).length > 300 ? '…' : ''}</p>
               </div>
             )}
@@ -318,24 +318,24 @@ export default function DocWizardPage() {
           <ChatPanel
             messages={session.messages}
             onSend={handleChat}
-            placeholder={`Discuss the ${sectionLabel(activeSection)} section…`}
+            placeholder={`Converse sobre a seção ${sectionLabel(activeSection)}…`}
           />
           <div className="wizard-actions">
-            <button type="button" className="btn secondary" onClick={() => goToStep('basics')}>Back</button>
+            <button type="button" className="btn secondary" onClick={() => goToStep('basics')}>Voltar</button>
             <button type="button" className="btn secondary" onClick={() => extractSection(activeSection)} disabled={extracting}>
-              {extracting ? 'Extracting…' : 'Extract section from chat'}
+              {extracting ? 'Extraindo…' : 'Extrair seção do chat'}
             </button>
-            <button type="button" onClick={() => goToStep('review')}>Proceed to review</button>
+            <button type="button" onClick={() => goToStep('review')}>Ir para revisão</button>
           </div>
         </div>
       )}
 
       {session && stepIndex === 2 && (
         <div className="wizard-section">
-          <h2>Section Review</h2>
+          <h2>Revisão de Seções</h2>
           <p className="muted">
-            Edit any section directly. Prioritize <strong>Data</strong>, <strong>Methods</strong>,
-            <strong> Expected Artifacts</strong>, and <strong>Analysis Workflow</strong>.
+            Edite qualquer seção diretamente. Priorize <strong>Dados</strong>, <strong>Métodos</strong>,
+            <strong> Artefatos Esperados</strong> e <strong>Fluxo de Análise</strong>.
           </p>
           {DOC_SECTIONS.map((s) => (
             <div key={s.key} className="review-block">
@@ -345,27 +345,27 @@ export default function DocWizardPage() {
                 onChange={(e) => updateSection(s.key, e.target.value)}
                 onBlur={persistSections}
                 rows={4}
-                placeholder={`Enter content for ${s.label}…`}
+                placeholder={`Digite o conteúdo para ${s.label}…`}
               />
             </div>
           ))}
           <div className="wizard-actions">
-            <button type="button" className="btn secondary" onClick={() => goToStep('basics')}>Back to import</button>
-            <button type="button" className="btn secondary" onClick={() => goToStep('intake')}>Use guided chat</button>
-            <button type="button" onClick={() => goToStep('quality')}>Run quality gate</button>
+            <button type="button" className="btn secondary" onClick={() => goToStep('basics')}>Voltar à importação</button>
+            <button type="button" className="btn secondary" onClick={() => goToStep('intake')}>Usar chat guiado</button>
+            <button type="button" onClick={() => goToStep('quality')}>Executar controle de qualidade</button>
           </div>
         </div>
       )}
 
       {session && stepIndex === 3 && (
         <div className="wizard-section">
-          <h2>Quality Gate</h2>
-          <p className="muted">Review your document against a quality checklist powered by the assistant.</p>
+          <h2>Controle de Qualidade</h2>
+          <p className="muted">Revise seu documento com uma lista de verificação gerada pelo assistente.</p>
           <button type="button" onClick={runQuality} disabled={checklistLoading}>
-            {checklistLoading ? 'Running checklist…' : 'Run checklist'}
+            {checklistLoading ? 'Executando lista…' : 'Executar lista de verificação'}
           </button>
           {checklistLoading && (
-            <LoadingPanel message="Running quality checklist — reviewing your sections…" />
+            <LoadingPanel message="Executando controle de qualidade — revisando suas seções…" />
           )}
           {!checklistLoading && (session.quality_checklist.items || []).length > 0 && (
             <ul className="checklist">
@@ -378,22 +378,22 @@ export default function DocWizardPage() {
             </ul>
           )}
           {!checklistLoading && !(session.quality_checklist.items || []).length && (
-            <p className="muted">No checklist results yet. Click Run checklist to evaluate your document.</p>
+            <p className="muted">Nenhum resultado ainda. Clique em Executar lista de verificação para avaliar seu documento.</p>
           )}
           <div className="wizard-actions">
-            <button type="button" className="btn secondary" onClick={() => goToStep('review')} disabled={checklistLoading}>Back to review</button>
-            <button type="button" onClick={() => goToStep('export')} disabled={checklistLoading}>Proceed to export</button>
+            <button type="button" className="btn secondary" onClick={() => goToStep('review')} disabled={checklistLoading}>Voltar à revisão</button>
+            <button type="button" onClick={() => goToStep('export')} disabled={checklistLoading}>Ir para exportação</button>
           </div>
         </div>
       )}
 
       {session && stepIndex === 4 && (
         <div className="wizard-section">
-          <h2>Export</h2>
-          <p>Download your project document as project.docx</p>
+          <h2>Exportar</h2>
+          <p>Baixe o documento do projeto como project.docx</p>
           <div className="wizard-actions">
-            <button type="button" className="btn secondary" onClick={() => goToStep('review')}>Edit sections</button>
-            <button type="button" onClick={() => api.exportProject(session.id)}>Download project.docx</button>
+            <button type="button" className="btn secondary" onClick={() => goToStep('review')}>Editar seções</button>
+            <button type="button" onClick={() => api.exportProject(session.id)}>Baixar project.docx</button>
           </div>
         </div>
       )}
