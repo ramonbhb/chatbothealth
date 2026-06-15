@@ -253,6 +253,27 @@ label { display: block; margin-bottom: 1rem; }
 }
 .topic-checklist ul { margin: 0.5rem 0 0; padding-left: 1.25rem; }
 .topic-checklist li { margin-bottom: 0.25rem; }
+.cleaning-versions-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+.versions-header .small { font-size: 0.85rem; margin: 0.25rem 0 0.75rem; }
+.versions-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.versions-list { list-style: none; padding: 0; margin: 0; }
+.version-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border);
+}
+.version-item:first-child { border-top: none; }
+.version-item-actions { display: flex; gap: 0.35rem; flex-shrink: 0; }
+.version-notes { font-size: 0.85rem; margin: 0.25rem 0 0; color: var(--text-muted); }
 .schema-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .schema-table th, .schema-table td {
   border: 1px solid var(--border);

@@ -146,6 +146,39 @@ export const api = {
     ),
   validateScript: (id: number) =>
     request<Record<string, unknown>>(`/api/cleaning/${id}/validate`, { method: 'POST' }),
+  listCleaningVersions: (id: number) =>
+    request<Array<{
+      id: number;
+      session_id: number;
+      version_number: number;
+      label: string;
+      script_content: string;
+      validation_result: Record<string, unknown>;
+      messages_snapshot: Array<{ role: string; content: string }>;
+      notes: string;
+      created_at: string;
+    }>>(`/api/cleaning/${id}/versions`),
+  saveCleaningVersion: (id: number, data: { label?: string; notes?: string }) =>
+    request(`/api/cleaning/${id}/versions`, { method: 'POST', body: JSON.stringify(data) }),
+  startNewCleaningVersion: (id: number, data: { save_current?: boolean; current_label?: string; notes?: string }) =>
+    request<WizardSession>(`/api/cleaning/${id}/versions/new`, { method: 'POST', body: JSON.stringify(data) }),
+  restoreCleaningVersion: (id: number, versionId: number) =>
+    request<WizardSession>(`/api/cleaning/${id}/versions/${versionId}/restore`, { method: 'POST' }),
+  exportCleaningVersion: async (id: number, versionId: number) => {
+    const token = getToken();
+    const res = await fetch(`${API_URL}/api/cleaning/${id}/versions/${versionId}/export`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error('Falha na exportação');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `data_clean_v${versionId}.py`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
   exportCleaning: async (id: number) => {
     const token = getToken();
     const res = await fetch(`${API_URL}/api/cleaning/${id}/export`, {

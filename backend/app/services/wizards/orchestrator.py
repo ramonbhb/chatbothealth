@@ -267,6 +267,8 @@ async def generate_clean_script(
             "content": (
                 "Gere um script data_clean.py completo com base na conversa. "
                 "Use pandas e SQLAlchemy. Inclua uma função main(). "
+                "IMPORTANTE: leia sempre das tabelas-fonte originais do conjunto de dados (base zerada). "
+                "Não assuma que existe saída de limpeza anterior — cada execução parte do bruto. "
                 "Retorne APENAS código Python, sem blocos markdown."
             ),
         },

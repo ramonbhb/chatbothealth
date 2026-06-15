@@ -10,6 +10,34 @@ from app.services.llm.json_utils import parse_json_object
 
 logger = logging.getLogger(__name__)
 
+# Gemini 2.5+ usa tokens de "pensamento" que podem esgotar max_tokens e devolver conteúdo vazio.
+_GEMINI_REASONING_PREFIXES = ("gemini/gemini-2", "gemini/gemini-3", "gemini-2", "gemini-3")
+
+
+def _is_gemini_reasoning_model(model: str) -> bool:
+    normalized = model.lower().replace("models/", "")
+    return any(normalized.startswith(prefix) for prefix in _GEMINI_REASONING_PREFIXES)
+
+
+def _gemini_kwargs(model: str) -> dict:
+    if _is_gemini_reasoning_model(model):
+        return {"reasoning_effort": "none"}
+    return {}
+
+
+def _finish_reason(response) -> str | None:
+    try:
+        return response.choices[0].finish_reason
+    except (AttributeError, IndexError, KeyError):
+        return None
+
+
+def _extract_content(response) -> str:
+    try:
+        return response.choices[0].message.content or ""
+    except (AttributeError, IndexError, KeyError):
+        return ""
+
 
 class LLMGateway:
     def _apply_api_keys(self) -> None:
@@ -42,39 +70,56 @@ class LLMGateway:
                 "GEMINI_API_KEY não está configurada. Defina no arquivo .env do projeto e reinicie o backend."
             )
 
-        kwargs: dict = {
+        effective_max_tokens = max(max_tokens, 256)
+        base_kwargs: dict = {
             "model": self.model,
             "messages": messages,
             "temperature": temperature,
-            "max_tokens": max_tokens,
+            "max_tokens": effective_max_tokens,
+            **_gemini_kwargs(self.model),
         }
         if json_mode:
-            kwargs["response_format"] = {"type": "json_object"}
+            base_kwargs["response_format"] = {"type": "json_object"}
 
-        try:
-            response = await acompletion(**kwargs)
-        except RateLimitError as exc:
-            logger.warning("LLM rate limit: %s", exc)
-            raise RuntimeError(
-                "Limite de taxa da API Gemini excedido (plano gratuito ~20 requisições/dia). "
-                "Aguarde cerca de um minuto e tente novamente, ou verifique o uso em https://ai.dev/rate-limit. "
-                f"Detalhes: {exc}"
-            ) from exc
-        except Exception as exc:
-            logger.exception("LLM call failed")
-            raise RuntimeError(f"Falha na chamada ao LLM: {exc}") from exc
+        last_finish_reason: str | None = None
+        for attempt in range(2):
+            kwargs = dict(base_kwargs)
+            if attempt == 1:
+                kwargs["reasoning_effort"] = "none"
+                kwargs["max_tokens"] = max(effective_max_tokens, 4096)
+                logger.warning(
+                    "LLM resposta vazia (finish_reason=%s); tentando novamente com reasoning desativado",
+                    last_finish_reason,
+                )
 
-        content = response.choices[0].message.content or ""
-        if not content.strip():
-            raise RuntimeError(
-                "O LLM retornou uma resposta vazia. Tente alterar LLM_MODEL no .env "
-                "(ex.: gemini/gemini-2.5-flash). Verifique GET /api/llm/status"
-            )
+            try:
+                response = await acompletion(**kwargs)
+            except RateLimitError as exc:
+                logger.warning("LLM rate limit: %s", exc)
+                raise RuntimeError(
+                    "Limite de taxa da API Gemini excedido (plano gratuito ~20 requisições/dia). "
+                    "Aguarde cerca de um minuto e tente novamente, ou verifique o uso em https://ai.dev/rate-limit. "
+                    f"Detalhes: {exc}"
+                ) from exc
+            except Exception as exc:
+                logger.exception("LLM call failed")
+                raise RuntimeError(f"Falha na chamada ao LLM: {exc}") from exc
 
-        usage = getattr(response, "usage", None)
-        prompt_tokens = getattr(usage, "prompt_tokens", 0) if usage else 0
-        completion_tokens = getattr(usage, "completion_tokens", 0) if usage else 0
-        return content, prompt_tokens, completion_tokens
+            content = _extract_content(response)
+            last_finish_reason = _finish_reason(response)
+            if content.strip():
+                usage = getattr(response, "usage", None)
+                prompt_tokens = getattr(usage, "prompt_tokens", 0) if usage else 0
+                completion_tokens = getattr(usage, "completion_tokens", 0) if usage else 0
+                return content, prompt_tokens, completion_tokens
+
+        raise RuntimeError(
+            "O LLM retornou uma resposta vazia. "
+            f"Modelo: {self.model}, finish_reason={last_finish_reason}. "
+            "Isso costuma ocorrer quando o Gemini 2.5 usa tokens de 'pensamento' e esgota o limite. "
+            "O backend já tenta desativar o reasoning automaticamente; se persistir, "
+            "tente LLM_MODEL=gemini/gemini-2.0-flash no .env ou verifique GET /api/llm/status."
+        )
 
     async def stream(
         self,
@@ -88,8 +133,9 @@ class LLMGateway:
             model=self.model,
             messages=messages,
             temperature=temperature,
-            max_tokens=max_tokens,
+            max_tokens=max(max_tokens, 256),
             stream=True,
+            **_gemini_kwargs(self.model),
         )
         async for chunk in response:
             delta = chunk.choices[0].delta

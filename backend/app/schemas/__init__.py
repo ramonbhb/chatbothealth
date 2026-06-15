@@ -141,6 +141,31 @@ class ChatMessageOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class CleaningVersionCreate(BaseModel):
+    label: str = ""
+    notes: str = ""
+
+
+class CleaningVersionNew(BaseModel):
+    save_current: bool = True
+    current_label: str = ""
+    notes: str = ""
+
+
+class CleaningVersionOut(BaseModel):
+    id: int
+    session_id: int
+    version_number: int
+    label: str
+    script_content: str
+    validation_result: dict
+    messages_snapshot: list[dict]
+    notes: str
+    created_at: str
+
+    model_config = {"from_attributes": True}
+
+
 class WizardSessionOut(BaseModel):
     id: int
     wizard_type: str

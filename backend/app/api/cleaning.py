@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -12,8 +12,26 @@ from app.audit.service import log_audit
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.models import CatalogTable, ChatMessage, Dataset, ExportArtifact, User, WizardSession, WizardType
-from app.schemas import ChatMessageCreate, ChatMessageOut, WizardSessionCreate, WizardSessionOut, WizardSessionUpdate
+from app.models import (
+    CatalogTable,
+    ChatMessage,
+    CleaningVersion,
+    Dataset,
+    ExportArtifact,
+    User,
+    WizardSession,
+    WizardType,
+)
+from app.schemas import (
+    ChatMessageCreate,
+    ChatMessageOut,
+    CleaningVersionCreate,
+    CleaningVersionNew,
+    CleaningVersionOut,
+    WizardSessionCreate,
+    WizardSessionOut,
+    WizardSessionUpdate,
+)
 from app.services.scriptgen.validator import build_readme_snippet, validate_script
 from app.services.wizards.orchestrator import (
     generate_clean_script,
@@ -24,6 +42,84 @@ from app.services.wizards.orchestrator import (
 )
 
 router = APIRouter(prefix="/cleaning", tags=["cleaning"])
+
+
+async def _get_cleaning_session(
+    db: AsyncSession, session_id: int, user_id: int, *, load_messages: bool = False
+) -> WizardSession:
+    query = select(WizardSession).where(
+        WizardSession.id == session_id,
+        WizardSession.user_id == user_id,
+        WizardSession.wizard_type == WizardType.data_clean,
+    )
+    if load_messages:
+        query = query.options(selectinload(WizardSession.messages))
+    result = await db.execute(query)
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Sessão não encontrada")
+    return session
+
+
+async def _next_version_number(db: AsyncSession, session_id: int) -> int:
+    result = await db.execute(
+        select(func.coalesce(func.max(CleaningVersion.version_number), 0)).where(
+            CleaningVersion.session_id == session_id
+        )
+    )
+    return int(result.scalar_one()) + 1
+
+
+def _version_out(version: CleaningVersion) -> CleaningVersionOut:
+    return CleaningVersionOut(
+        id=version.id,
+        session_id=version.session_id,
+        version_number=version.version_number,
+        label=version.label,
+        script_content=version.script_content,
+        validation_result=json.loads(version.validation_result or "{}"),
+        messages_snapshot=json.loads(version.messages_snapshot or "[]"),
+        notes=version.notes,
+        created_at=version.created_at.isoformat(),
+    )
+
+
+def _messages_snapshot(session: WizardSession) -> str:
+    return json.dumps(
+        [{"role": m.role, "content": m.content, "created_at": m.created_at.isoformat()} for m in session.messages]
+    )
+
+
+async def _save_current_as_version(
+    db: AsyncSession,
+    session: WizardSession,
+    *,
+    label: str = "",
+    notes: str = "",
+) -> CleaningVersion:
+    if not session.script_content.strip():
+        raise HTTPException(status_code=400, detail="Não há script para salvar como versão.")
+    version_number = await _next_version_number(db, session.id)
+    version = CleaningVersion(
+        session_id=session.id,
+        version_number=version_number,
+        label=label.strip() or f"Versão {version_number}",
+        script_content=session.script_content,
+        validation_result=session.validation_result or "{}",
+        messages_snapshot=_messages_snapshot(session),
+        notes=notes.strip(),
+    )
+    db.add(version)
+    return version
+
+
+async def _reset_working_draft(db: AsyncSession, session: WizardSession) -> None:
+    await db.execute(delete(ChatMessage).where(ChatMessage.session_id == session.id))
+    session.messages = []
+    session.script_content = ""
+    session.validation_result = json.dumps({})
+    session.current_step = "schema_explore"
+    session.updated_at = datetime.now(timezone.utc)
 
 
 def _session_out(session: WizardSession) -> WizardSessionOut:
@@ -198,6 +294,163 @@ async def update_cleaning_session(
     await db.commit()
     await db.refresh(session)
     return _session_out(session)
+
+
+@router.get("/{session_id}/versions", response_model=list[CleaningVersionOut])
+async def list_cleaning_versions(
+    session_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_cleaning_session(db, session_id, current_user.id)
+    result = await db.execute(
+        select(CleaningVersion)
+        .where(CleaningVersion.session_id == session_id)
+        .order_by(CleaningVersion.version_number.desc())
+    )
+    return [_version_out(v) for v in result.scalars().all()]
+
+
+@router.post("/{session_id}/versions", response_model=CleaningVersionOut, status_code=201)
+async def save_cleaning_version(
+    session_id: int,
+    body: CleaningVersionCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    session = await _get_cleaning_session(db, session_id, current_user.id, load_messages=True)
+    version = await _save_current_as_version(db, session, label=body.label, notes=body.notes)
+    session.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(version)
+    return _version_out(version)
+
+
+@router.post("/{session_id}/versions/new", response_model=WizardSessionOut)
+async def start_new_cleaning_version(
+    session_id: int,
+    body: CleaningVersionNew,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    session = await _get_cleaning_session(db, session_id, current_user.id, load_messages=True)
+    if body.save_current and session.script_content.strip():
+        await _save_current_as_version(
+            db, session, label=body.current_label, notes=body.notes
+        )
+    await _reset_working_draft(db, session)
+    await db.commit()
+    result = await db.execute(
+        select(WizardSession)
+        .where(WizardSession.id == session.id)
+        .options(selectinload(WizardSession.messages))
+    )
+    return _session_out(result.scalar_one())
+
+
+@router.get("/{session_id}/versions/{version_id}", response_model=CleaningVersionOut)
+async def get_cleaning_version(
+    session_id: int,
+    version_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_cleaning_session(db, session_id, current_user.id)
+    result = await db.execute(
+        select(CleaningVersion).where(
+            CleaningVersion.id == version_id,
+            CleaningVersion.session_id == session_id,
+        )
+    )
+    version = result.scalar_one_or_none()
+    if not version:
+        raise HTTPException(status_code=404, detail="Versão não encontrada")
+    return _version_out(version)
+
+
+@router.post("/{session_id}/versions/{version_id}/restore", response_model=WizardSessionOut)
+async def restore_cleaning_version(
+    session_id: int,
+    version_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    session = await _get_cleaning_session(db, session_id, current_user.id, load_messages=True)
+    result = await db.execute(
+        select(CleaningVersion).where(
+            CleaningVersion.id == version_id,
+            CleaningVersion.session_id == session_id,
+        )
+    )
+    version = result.scalar_one_or_none()
+    if not version:
+        raise HTTPException(status_code=404, detail="Versão não encontrada")
+
+    await db.execute(delete(ChatMessage).where(ChatMessage.session_id == session.id))
+    for item in json.loads(version.messages_snapshot or "[]"):
+        db.add(
+            ChatMessage(
+                session_id=session.id,
+                role=item.get("role", "user"),
+                content=item.get("content", ""),
+            )
+        )
+    session.script_content = version.script_content
+    session.validation_result = version.validation_result
+    session.current_step = "script_draft" if version.script_content.strip() else "discussion"
+    session.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    result = await db.execute(
+        select(WizardSession)
+        .where(WizardSession.id == session.id)
+        .options(selectinload(WizardSession.messages))
+    )
+    return _session_out(result.scalar_one())
+
+
+@router.post("/{session_id}/versions/{version_id}/export")
+async def export_cleaning_version(
+    session_id: int,
+    version_id: int,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    settings = get_settings()
+    os.makedirs(settings.exports_dir, exist_ok=True)
+    await _get_cleaning_session(db, session_id, current_user.id)
+    result = await db.execute(
+        select(CleaningVersion).where(
+            CleaningVersion.id == version_id,
+            CleaningVersion.session_id == session_id,
+        )
+    )
+    version = result.scalar_one_or_none()
+    if not version:
+        raise HTTPException(status_code=404, detail="Versão não encontrada")
+    if not version.script_content.strip():
+        raise HTTPException(status_code=400, detail="Esta versão não possui script para exportar.")
+
+    script_path = os.path.join(
+        settings.exports_dir, f"data_clean_{session_id}_v{version.version_number}.py"
+    )
+    with open(script_path, "w") as f:
+        f.write(version.script_content)
+
+    await log_audit(
+        db,
+        user_id=current_user.id,
+        action="export_data_clean_version",
+        resource_type="cleaning_version",
+        resource_id=str(version.id),
+        ip_address=request.client.host if request.client else "",
+    )
+    await db.commit()
+    return FileResponse(
+        script_path,
+        filename=f"data_clean_v{version.version_number}.py",
+        media_type="text/x-python",
+    )
 
 
 @router.post("/{session_id}/chat", response_model=ChatMessageOut)

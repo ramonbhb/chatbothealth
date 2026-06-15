@@ -170,6 +170,9 @@ class WizardSession(Base):
     exports: Mapped[list["ExportArtifact"]] = relationship(
         back_populates="session", cascade="all, delete-orphan"
     )
+    cleaning_versions: Mapped[list["CleaningVersion"]] = relationship(
+        back_populates="session", cascade="all, delete-orphan", order_by="CleaningVersion.version_number"
+    )
 
 
 class ChatMessage(Base):
@@ -199,6 +202,25 @@ class ExportArtifact(Base):
     )
 
     session: Mapped["WizardSession"] = relationship(back_populates="exports")
+
+
+class CleaningVersion(Base):
+    __tablename__ = "cleaning_versions"
+    __table_args__ = (UniqueConstraint("session_id", "version_number", name="uq_cleaning_version"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    session_id: Mapped[int] = mapped_column(ForeignKey("wizard_sessions.id", ondelete="CASCADE"))
+    version_number: Mapped[int] = mapped_column(Integer)
+    label: Mapped[str] = mapped_column(String(255), default="")
+    script_content: Mapped[str] = mapped_column(Text, default="")
+    validation_result: Mapped[str] = mapped_column(Text, default="{}")
+    messages_snapshot: Mapped[str] = mapped_column(Text, default="[]")
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+    session: Mapped["WizardSession"] = relationship(back_populates="cleaning_versions")
 
 
 class AuditLog(Base):

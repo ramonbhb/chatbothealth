@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, WizardSession } from '../api/client';
+import { CleaningVersionsPanel, CleaningVersion } from '../components/CleaningVersionsPanel';
 import { ChatPanel } from '../components/ChatPanel';
 import { DatasetExplorer } from '../components/DatasetExplorer';
 import { LoadingPanel } from '../components/LoadingPanel';
@@ -51,10 +52,20 @@ export default function CleanWizardPage() {
   const [generating, setGenerating] = useState(false);
   const [validating, setValidating] = useState(false);
   const [kickoffLoading, setKickoffLoading] = useState(false);
+  const [versions, setVersions] = useState<CleaningVersion[]>([]);
+  const [versionSaving, setVersionSaving] = useState(false);
 
   const loadSchema = async (datasetId: number) => {
     const sch = await api.getSchema(datasetId);
     setSchema(sch as unknown as SchemaData);
+  };
+
+  const loadVersions = async (sessionId: number) => {
+    try {
+      setVersions(await api.listCleaningVersions(sessionId));
+    } catch {
+      setVersions([]);
+    }
   };
 
   useEffect(() => {
@@ -65,6 +76,7 @@ export default function CleanWizardPage() {
         setSession(s);
         setTitle(s.title);
         if (s.dataset_id) await loadSchema(s.dataset_id);
+        await loadVersions(s.id);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -84,6 +96,7 @@ export default function CleanWizardPage() {
     const s = await api.getCleaning(session.id);
     setSession(s);
     if (s.dataset_id) await loadSchema(s.dataset_id);
+    await loadVersions(s.id);
   };
 
   const goToStep = async (step: string) => {
@@ -141,6 +154,70 @@ export default function CleanWizardPage() {
     })();
     return () => { cancelled = true; };
   }, [session?.id, stepIndex]);
+
+  const saveVersion = async (label: string, notes: string) => {
+    if (!session) return;
+    setVersionSaving(true);
+    setError('');
+    try {
+      await api.saveCleaningVersion(session.id, { label, notes });
+      await loadVersions(session.id);
+      setSaveMessage('Versão salva com sucesso.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Falha ao salvar versão');
+    } finally {
+      setVersionSaving(false);
+    }
+  };
+
+  const startNewVersion = async (saveCurrent: boolean, currentLabel: string, notes: string) => {
+    if (!session) return;
+    setVersionSaving(true);
+    setError('');
+    setKickoffLoading(false);
+    try {
+      const updated = await api.startNewCleaningVersion(session.id, {
+        save_current: saveCurrent,
+        current_label: currentLabel,
+        notes,
+      });
+      setSession(updated);
+      await loadVersions(session.id);
+      setSaveMessage(
+        saveCurrent
+          ? 'Nova versão iniciada. Rascunho anterior salvo — explore os dados e planeje a partir da base zerada.'
+          : 'Nova versão iniciada a partir da base zerada.'
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Falha ao iniciar nova versão');
+    } finally {
+      setVersionSaving(false);
+    }
+  };
+
+  const restoreVersion = async (versionId: number) => {
+    if (!session) return;
+    setVersionSaving(true);
+    setError('');
+    try {
+      const updated = await api.restoreCleaningVersion(session.id, versionId);
+      setSession(updated);
+      setSaveMessage('Versão carregada no rascunho atual.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Falha ao abrir versão');
+    } finally {
+      setVersionSaving(false);
+    }
+  };
+
+  const exportVersion = async (versionId: number) => {
+    if (!session) return;
+    try {
+      await api.exportCleaningVersion(session.id, versionId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Falha na exportação');
+    }
+  };
 
   const handleChat = async (content: string) => {
     if (!session) return;
@@ -211,6 +288,18 @@ export default function CleanWizardPage() {
 
       {saveMessage && <p className="save-message">{saveMessage}</p>}
       {error && <pre className="error debug-error">{error}</pre>}
+
+      {session && session.dataset_id && stepIndex >= 2 && (
+        <CleaningVersionsPanel
+          versions={versions}
+          hasDraftScript={Boolean(session.script_content?.trim())}
+          onSaveVersion={saveVersion}
+          onNewVersion={startNewVersion}
+          onRestore={restoreVersion}
+          onExport={exportVersion}
+          saving={versionSaving}
+        />
+      )}
 
       {!session && (
         <div className="wizard-section">
@@ -327,6 +416,14 @@ export default function CleanWizardPage() {
           />
           <div className="wizard-actions">
             <button type="button" className="btn secondary" onClick={() => goToStep('discussion')}>Voltar</button>
+            <button
+              type="button"
+              className="btn secondary"
+              onClick={() => saveVersion('', '')}
+              disabled={versionSaving || !session.script_content?.trim()}
+            >
+              Salvar versão
+            </button>
             <button type="button" onClick={validateScript} disabled={validating}>
               {validating ? 'Validando…' : 'Validar Script'}
             </button>
@@ -358,11 +455,19 @@ export default function CleanWizardPage() {
       {session && stepIndex === 6 && (
         <div className="wizard-section">
           <h2>Exportar</h2>
-          <p>Baixe o data_clean.py para sua equipe de execução.</p>
+          <p>Baixe o rascunho atual ou use as versões salvas acima para exportar versões anteriores.</p>
           <div className="wizard-actions">
             <button type="button" className="btn secondary" onClick={() => goToStep('validation')}>Voltar</button>
             <button type="button" className="btn secondary" onClick={() => goToStep('script_draft')}>Editar script</button>
-            <button type="button" onClick={() => api.exportCleaning(session.id)}>Baixar data_clean.py</button>
+            <button
+              type="button"
+              className="btn secondary"
+              onClick={() => saveVersion('', '')}
+              disabled={versionSaving || !session.script_content?.trim()}
+            >
+              Salvar versão
+            </button>
+            <button type="button" onClick={() => api.exportCleaning(session.id)}>Baixar rascunho (data_clean.py)</button>
           </div>
         </div>
       )}
