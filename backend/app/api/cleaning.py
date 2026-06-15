@@ -15,7 +15,13 @@ from app.core.deps import get_current_user
 from app.models import CatalogTable, ChatMessage, Dataset, ExportArtifact, User, WizardSession, WizardType
 from app.schemas import ChatMessageCreate, ChatMessageOut, WizardSessionCreate, WizardSessionOut, WizardSessionUpdate
 from app.services.scriptgen.validator import build_readme_snippet, validate_script
-from app.services.wizards.orchestrator import generate_clean_script, get_schema_context, run_clean_discussion
+from app.services.wizards.orchestrator import (
+    generate_clean_script,
+    get_schema_context,
+    parse_sample_rows,
+    run_clean_discussion,
+    run_clean_kickoff,
+)
 
 router = APIRouter(prefix="/cleaning", tags=["cleaning"])
 
@@ -84,6 +90,7 @@ async def get_dataset_schema(
                 "id": t.id,
                 "name": t.name,
                 "description": t.description,
+                "sample_rows": parse_sample_rows(t.sample_rows),
                 "columns": [
                     {
                         "id": c.id,
@@ -216,6 +223,44 @@ async def cleaning_chat(
     reply = await run_clean_discussion(db, session, body.content)
     assistant_msg = ChatMessage(session_id=session.id, role="assistant", content=reply)
     db.add(assistant_msg)
+    session.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(assistant_msg)
+    return ChatMessageOut(
+        id=assistant_msg.id,
+        role=assistant_msg.role,
+        content=assistant_msg.content,
+        created_at=assistant_msg.created_at.isoformat(),
+    )
+
+
+@router.post("/{session_id}/kickoff", response_model=ChatMessageOut)
+async def cleaning_kickoff(
+    session_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(WizardSession)
+        .where(WizardSession.id == session_id, WizardSession.user_id == current_user.id)
+        .options(selectinload(WizardSession.messages))
+    )
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.messages:
+        last = session.messages[-1]
+        return ChatMessageOut(
+            id=last.id,
+            role=last.role,
+            content=last.content,
+            created_at=last.created_at.isoformat(),
+        )
+
+    reply = await run_clean_kickoff(db, session)
+    assistant_msg = ChatMessage(session_id=session.id, role="assistant", content=reply)
+    db.add(assistant_msg)
+    session.current_step = "discussion"
     session.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(assistant_msg)

@@ -13,10 +13,23 @@ from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models import ChatMessage, ExportArtifact, User, WizardSession, WizardType
-from app.schemas import ChatMessageCreate, ChatMessageOut, WizardSessionCreate, WizardSessionOut, WizardSessionUpdate
+from app.schemas import (
+    ChatMessageCreate,
+    ChatMessageOut,
+    ImportTextRequest,
+    WizardSessionCreate,
+    WizardSessionOut,
+    WizardSessionUpdate,
+)
 from app.services.docgen.builder import build_project_doc
+from app.services.llm.json_utils import coerce_section_value
 from app.services.llm.prompts import PROJECT_DOC_SECTIONS
-from app.services.wizards.orchestrator import extract_section_content, run_doc_intake, run_quality_check
+from app.services.wizards.orchestrator import (
+    extract_section_content,
+    run_doc_intake,
+    run_quality_check,
+    split_full_text_into_sections,
+)
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -129,8 +142,110 @@ async def update_project(
         session.section_data = json.dumps(body.section_data)
     session.updated_at = datetime.now(timezone.utc)
     await db.commit()
-    await db.refresh(session)
-    return _session_out(session)
+    result = await db.execute(
+        select(WizardSession)
+        .where(WizardSession.id == session_id)
+        .options(selectinload(WizardSession.messages))
+    )
+    return _session_out(result.scalar_one())
+
+
+@router.post("/{session_id}/save-draft", response_model=WizardSessionOut)
+async def save_draft(
+    session_id: int,
+    body: WizardSessionUpdate,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(WizardSession)
+        .where(WizardSession.id == session_id, WizardSession.user_id == current_user.id)
+        .options(selectinload(WizardSession.messages))
+    )
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if body.title is not None:
+        session.title = body.title
+    if body.current_step is not None:
+        session.current_step = body.current_step
+    if body.section_data is not None:
+        session.section_data = json.dumps(body.section_data)
+    session.updated_at = datetime.now(timezone.utc)
+    await log_audit(
+        db,
+        user_id=current_user.id,
+        action="save_project_draft",
+        resource_type="wizard_session",
+        resource_id=str(session.id),
+        ip_address=request.client.host if request.client else "",
+    )
+    await db.commit()
+    result = await db.execute(
+        select(WizardSession)
+        .where(WizardSession.id == session_id)
+        .options(selectinload(WizardSession.messages))
+    )
+    return _session_out(result.scalar_one())
+
+
+@router.post("/{session_id}/import-text", response_model=WizardSessionOut)
+async def import_full_text(
+    session_id: int,
+    body: ImportTextRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(WizardSession)
+        .where(WizardSession.id == session_id, WizardSession.user_id == current_user.id)
+        .options(selectinload(WizardSession.messages))
+    )
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    try:
+        sections, model, debug = await split_full_text_into_sections(body.full_text)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={"message": str(exc), "debug": {"stage": "llm_call", "hint": "Run backend/scripts/debug_import.py or GET /api/llm/status"}},
+        ) from exc
+
+    filled = sum(1 for v in sections.values() if v.strip())
+    if filled == 0:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "Could not extract sections from the text. The AI response was empty or invalid.",
+                "debug": debug,
+            },
+        )
+
+    section_data = json.loads(session.section_data or "{}")
+    section_data.update(sections)
+    section_data["_current_section"] = PROJECT_DOC_SECTIONS[0]
+    section_data["_imported"] = True
+    session.section_data = json.dumps(section_data)
+    session.current_step = "review"
+    session.llm_model_used = model
+    session.updated_at = datetime.now(timezone.utc)
+
+    note = ChatMessage(
+        session_id=session.id,
+        role="assistant",
+        content="Imported full project text and split it into predefined sections. Review and edit each section below.",
+    )
+    db.add(note)
+    await db.commit()
+    result = await db.execute(
+        select(WizardSession)
+        .where(WizardSession.id == session_id)
+        .options(selectinload(WizardSession.messages))
+    )
+    return _session_out(result.scalar_one())
 
 
 @router.post("/{session_id}/chat", response_model=ChatMessageOut)
@@ -184,7 +299,7 @@ async def extract_section(
         raise HTTPException(status_code=404, detail="Session not found")
     extracted = await extract_section_content(db, session, section_key)
     section_data = json.loads(session.section_data or "{}")
-    section_data[section_key] = extracted.get("content", "")
+    section_data[section_key] = coerce_section_value(extracted.get("content", extracted))
     section_data["_current_section"] = section_key
     session.section_data = json.dumps(section_data)
     await db.commit()

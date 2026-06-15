@@ -90,6 +90,7 @@ class CatalogTable(Base):
     dataset_id: Mapped[int] = mapped_column(ForeignKey("datasets.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(255))
     description: Mapped[str] = mapped_column(Text, default="")
+    sample_rows: Mapped[str] = mapped_column(Text, default="[]")
 
     dataset: Mapped["Dataset"] = relationship(back_populates="tables")
     columns: Mapped[list["CatalogColumn"]] = relationship(

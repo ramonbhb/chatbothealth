@@ -24,7 +24,7 @@ class UserOut(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 
@@ -126,6 +126,10 @@ class WizardSessionUpdate(BaseModel):
 
 class ChatMessageCreate(BaseModel):
     content: str
+
+
+class ImportTextRequest(BaseModel):
+    full_text: str = Field(min_length=20)
 
 
 class ChatMessageOut(BaseModel):

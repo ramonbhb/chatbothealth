@@ -43,6 +43,12 @@ def create_app() -> FastAPI:
             "max_active_datasets": settings.max_active_datasets,
         }
 
+    @app.get("/api/llm/status")
+    async def llm_status():
+        from app.services.llm.status import check_llm_status
+
+        return await check_llm_status()
+
     return app
 
 

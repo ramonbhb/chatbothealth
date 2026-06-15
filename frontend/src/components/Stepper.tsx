@@ -1,16 +1,23 @@
 interface StepperProps {
   steps: string[];
   current: number;
+  onStepClick?: (index: number) => void;
 }
 
-export function Stepper({ steps, current }: StepperProps) {
+export function Stepper({ steps, current, onStepClick }: StepperProps) {
   return (
     <div className="stepper">
       {steps.map((step, i) => (
-        <div key={step} className={`step ${i <= current ? 'active' : ''} ${i === current ? 'current' : ''}`}>
+        <button
+          key={step}
+          type="button"
+          className={`step ${i <= current ? 'active' : ''} ${i === current ? 'current' : ''}`}
+          onClick={() => onStepClick?.(i)}
+          disabled={!onStepClick}
+        >
           <span className="step-num">{i + 1}</span>
           <span className="step-label">{step}</span>
-        </div>
+        </button>
       ))}
     </div>
   );

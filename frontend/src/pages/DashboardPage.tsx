@@ -20,7 +20,9 @@ export default function DashboardPage() {
       <div className="dashboard-grid">
         <Link to="/projects/new" className="dashboard-card">
           <h2>Project Document</h2>
-          <p>Create a detailed health data science project description (project.docx) through guided conversation.</p>
+          <p>
+            Document your study: data, methods, and expected outputs (tables, figures, models).
+          </p>
           <span className="card-action">Start wizard →</span>
         </Link>
         <Link to="/cleaning/new" className="dashboard-card">

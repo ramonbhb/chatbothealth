@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, WizardSession } from '../api/client';
+import { CLEAN_STEP_LABELS } from '../constants';
 
 export default function CleaningListPage() {
   const [sessions, setSessions] = useState<WizardSession[]>([]);
@@ -21,7 +22,7 @@ export default function CleaningListPage() {
           <li key={s.id}>
             <Link to={`/cleaning/${s.id}`}>
               <strong>{s.title}</strong>
-              <span>Step: {s.current_step}</span>
+              <span>{CLEAN_STEP_LABELS[s.current_step] || s.current_step}</span>
               <span>{new Date(s.updated_at).toLocaleString()}</span>
             </Link>
           </li>

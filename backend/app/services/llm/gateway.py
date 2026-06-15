@@ -1,39 +1,76 @@
-import json
+import logging
 import os
 from collections.abc import AsyncGenerator
 
 from litellm import acompletion
+from litellm.exceptions import RateLimitError
 
 from app.core.config import get_settings
+from app.services.llm.json_utils import parse_json_object
+
+logger = logging.getLogger(__name__)
 
 
 class LLMGateway:
-    def __init__(self) -> None:
-        self.settings = get_settings()
-        if self.settings.gemini_api_key:
-            os.environ["GEMINI_API_KEY"] = self.settings.gemini_api_key
-        if self.settings.local_model_enabled:
-            os.environ["OLLAMA_API_BASE"] = self.settings.ollama_api_base
+    def _apply_api_keys(self) -> None:
+        settings = get_settings()
+        if settings.gemini_api_key:
+            os.environ["GEMINI_API_KEY"] = settings.gemini_api_key
+            os.environ["GOOGLE_API_KEY"] = settings.gemini_api_key
+        if settings.local_model_enabled:
+            os.environ["OLLAMA_API_BASE"] = settings.ollama_api_base
 
     @property
     def model(self) -> str:
-        if self.settings.local_model_enabled:
-            return self.settings.llm_model_local
-        return self.settings.llm_model
+        settings = get_settings()
+        if settings.local_model_enabled:
+            return settings.llm_model_local
+        return settings.llm_model
+
     async def complete(
         self,
         messages: list[dict[str, str]],
         *,
         temperature: float = 0.3,
         max_tokens: int = 4096,
+        json_mode: bool = False,
     ) -> tuple[str, int, int]:
-        response = await acompletion(
-            model=self.model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
+        self._apply_api_keys()
+        settings = get_settings()
+        if not settings.gemini_api_key and not settings.local_model_enabled:
+            raise RuntimeError(
+                "GEMINI_API_KEY is not configured. Set it in the project .env file and restart the backend."
+            )
+
+        kwargs: dict = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
+
+        try:
+            response = await acompletion(**kwargs)
+        except RateLimitError as exc:
+            logger.warning("LLM rate limit: %s", exc)
+            raise RuntimeError(
+                "Gemini API rate limit exceeded (free tier ~20 requests/day). "
+                "Wait about a minute and retry, or check usage at https://ai.dev/rate-limit. "
+                f"Details: {exc}"
+            ) from exc
+        except Exception as exc:
+            logger.exception("LLM call failed")
+            raise RuntimeError(f"LLM call failed: {exc}") from exc
+
         content = response.choices[0].message.content or ""
+        if not content.strip():
+            raise RuntimeError(
+                "LLM returned an empty response. Try switching LLM_MODEL in .env "
+                "(e.g. gemini/gemini-2.5-flash). Check GET /api/llm/status"
+            )
+
         usage = getattr(response, "usage", None)
         prompt_tokens = getattr(usage, "prompt_tokens", 0) if usage else 0
         completion_tokens = getattr(usage, "completion_tokens", 0) if usage else 0
@@ -46,6 +83,7 @@ class LLMGateway:
         temperature: float = 0.3,
         max_tokens: int = 4096,
     ) -> AsyncGenerator[str, None]:
+        self._apply_api_keys()
         response = await acompletion(
             model=self.model,
             messages=messages,
@@ -63,19 +101,23 @@ class LLMGateway:
         messages: list[dict[str, str]],
         *,
         temperature: float = 0.2,
-    ) -> tuple[dict, int, int]:
-        content, prompt_tokens, completion_tokens = await self.complete(
-            messages, temperature=temperature
-        )
-        cleaned = content.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("\n", 1)[-1]
-            if cleaned.endswith("```"):
-                cleaned = cleaned[:-3]
+        max_tokens: int = 4096,
+    ) -> tuple[dict, str, int, int]:
         try:
-            return json.loads(cleaned), prompt_tokens, completion_tokens
-        except json.JSONDecodeError:
-            return {"raw": content}, prompt_tokens, completion_tokens
+            content, prompt_tokens, completion_tokens = await self.complete(
+                messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                json_mode=True,
+            )
+        except RuntimeError:
+            content, prompt_tokens, completion_tokens = await self.complete(
+                messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                json_mode=False,
+            )
+        return parse_json_object(content), content, prompt_tokens, completion_tokens
 
 
 llm_gateway = LLMGateway()

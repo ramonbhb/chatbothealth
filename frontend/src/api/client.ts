@@ -42,7 +42,16 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || 'Request failed');
+    const detail = err.detail;
+    let message = 'Request failed';
+    if (typeof detail === 'string') {
+      message = detail;
+    } else if (detail && typeof detail === 'object') {
+      const msg = detail.message || 'Request failed';
+      const debug = detail.debug ? `\n\nDebug:\n${JSON.stringify(detail.debug, null, 2)}` : '';
+      message = `${msg}${debug}`;
+    }
+    throw new Error(message);
   }
   if (res.status === 204) return undefined as T;
   const contentType = res.headers.get('content-type') || '';
@@ -64,10 +73,20 @@ export const api = {
       body: JSON.stringify({ wizard_type: 'project_doc', title }),
     }),
   getProject: (id: number) => request<WizardSession>(`/api/projects/${id}`),
-  updateProject: (id: number, data: Partial<WizardSession>) =>
+  updateProject: (id: number, data: Record<string, unknown>) =>
     request<WizardSession>(`/api/projects/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
+    }),
+  saveProjectDraft: (id: number, data: Record<string, unknown>) =>
+    request<WizardSession>(`/api/projects/${id}/save-draft`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  importFullText: (id: number, fullText: string) =>
+    request<WizardSession>(`/api/projects/${id}/import-text`, {
+      method: 'POST',
+      body: JSON.stringify({ full_text: fullText }),
     }),
   projectChat: (id: number, content: string) =>
     request<{ id: number; role: string; content: string; created_at: string }>(
@@ -114,6 +133,11 @@ export const api = {
     request<{ id: number; role: string; content: string; created_at: string }>(
       `/api/cleaning/${id}/chat`,
       { method: 'POST', body: JSON.stringify({ content }) }
+    ),
+  cleaningKickoff: (id: number) =>
+    request<{ id: number; role: string; content: string; created_at: string }>(
+      `/api/cleaning/${id}/kickoff`,
+      { method: 'POST' }
     ),
   generateScript: (id: number) =>
     request<{ script_content: string; validation_result: Record<string, unknown> }>(

@@ -25,6 +25,10 @@ def build_project_doc(
     doc.add_paragraph(f"Author: {user_email}")
     doc.add_paragraph(f"Session ID: {session_id}")
     doc.add_paragraph("")
+    doc.add_paragraph(
+        "Purpose: Document the study's data, methods, expected artifacts, and analysis workflow."
+    )
+    doc.add_paragraph("")
 
     for section_key in PROJECT_DOC_SECTIONS:
         label = SECTION_LABELS.get(section_key, section_key.replace("_", " ").title())

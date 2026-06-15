@@ -2,7 +2,7 @@
 
 Self-hosted web application for health researchers to produce:
 
-1. **project.docx** — structured health data science project documentation via guided LLM conversation
+1. **project.docx** — structured health data science project documentation via guided LLM conversation. This document also serves as the **specification for the analysis application** your team will build so end users can run the study's analyses.
 2. **data_clean.py** — validated data cleaning script generated from schema metadata and researcher discussion
 
 ## Stack
@@ -84,7 +84,24 @@ pip install -r requirements.txt
 pytest tests/ -v
 ```
 
-## Security Notes
+## Troubleshooting LLM / import
+
+Check Gemini connectivity:
+
+```bash
+curl http://localhost:8000/api/llm/status
+```
+
+Run import debug script:
+
+```bash
+cd backend
+set -a && source ../.env && set +a
+PYTHONPATH=. python scripts/debug_import.py
+```
+
+**Free tier limit:** `gemini-flash-latest` allows ~20 requests/day. If import fails with rate limit, wait ~60 seconds or use **Skip — fill sections manually**.
+
 
 - Change `SECRET_KEY` in production
 - Use HTTPS (see `docs/DEPLOYMENT.md`)
