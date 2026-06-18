@@ -220,13 +220,13 @@ export default function DocWizardPage() {
       {!session && <Stepper steps={DOC_STEPS} current={0} />}
 
       <div className="purpose-banner">
-        <strong>Objetivo:</strong> Capturar uma visão completa do seu estudo —
+        <strong>Objetivo:</strong> Capturar uma visão completa do seu estudo:
         <ul className="collection-goals">
           {PROJECT_COLLECTION_GOALS.map((g) => (
             <li key={g}>{g}</li>
           ))}
         </ul>
-        Cole o texto completo, use o chat guiado ou preencha as seções manualmente — o que funcionar melhor para você.
+        Cole o texto completo, use o chat guiado ou preencha as seções manualmente, o que funcionar melhor para você.
       </div>
 
       {saveMessage && <p className="save-message">{saveMessage}</p>}
@@ -258,6 +258,7 @@ export default function DocWizardPage() {
             <h3>Cole o texto completo do projeto</h3>
             <p className="muted">
               Cole uma descrição completa do projeto e o assistente dividirá automaticamente em todas as seções predefinidas.
+              Documentos longos são processados em partes; use títulos como Contexto, Objetivos e Métodos quando possível.
             </p>
             <textarea
               value={fullText}
@@ -266,16 +267,20 @@ export default function DocWizardPage() {
               placeholder="Cole o texto completo do seu projeto aqui..."
             />
             <button type="button" onClick={importFullText} disabled={importing || fullText.trim().length < 20}>
-              {importing ? 'Dividindo com IA…' : 'Importar e dividir em seções'}
+              {importing
+                ? (fullText.trim().length >= 6000
+                    ? 'Dividindo documento longo em seções… isso pode levar alguns minutos.'
+                    : 'Dividindo com IA…')
+                : 'Importar e dividir em seções'}
             </button>
           </div>
 
           <div className="wizard-actions import-alternatives">
             <button type="button" className="btn secondary" onClick={skipToManual}>
-              Pular — preencher seções manualmente
+              Pular e preencher seções manualmente
             </button>
             <button type="button" className="btn secondary" onClick={startGuidedChat}>
-              Pular — usar chat guiado
+              Pular e usar chat guiado
             </button>
           </div>
         </div>
@@ -286,8 +291,8 @@ export default function DocWizardPage() {
           <div>
             <h2>Coleta Guiada</h2>
             <p className="muted">
-              Converse sobre uma seção por vez. O chat <strong>não</strong> é copiado automaticamente —
-              clique em <strong>Extrair seção</strong> para copiar a conversa para o campo da seção abaixo.
+              Converse sobre uma seção por vez. O chat <strong>não</strong> é copiado automaticamente.
+              Clique em <strong>Extrair seção</strong> para copiar a conversa para o campo da seção abaixo.
             </p>
             <p>Foco atual: <strong>{sectionLabel(activeSection)}</strong></p>
             {DOC_SECTION_HINTS[activeSection] && (
@@ -365,14 +370,14 @@ export default function DocWizardPage() {
             {checklistLoading ? 'Executando lista…' : 'Executar lista de verificação'}
           </button>
           {checklistLoading && (
-            <LoadingPanel message="Executando controle de qualidade — revisando suas seções…" />
+            <LoadingPanel message="Executando controle de qualidade, revisando suas seções…" />
           )}
           {!checklistLoading && (session.quality_checklist.items || []).length > 0 && (
             <ul className="checklist">
               {(session.quality_checklist.items || []).map((item, i) => (
                 <li key={i} className={item.passed ? 'pass' : 'fail'}>
                   {item.passed ? '✓' : '✗'} {item.item}
-                  {item.note && <small> — {item.note}</small>}
+                  {item.note && <small> ({item.note})</small>}
                 </li>
               ))}
             </ul>

@@ -55,7 +55,7 @@ export function CleaningVersionsPanel({
       <div className="versions-header">
         <strong>Versões de limpeza</strong>
         <p className="muted small">
-          Cada versão salva é independente e parte da base zerada (tabelas-fonte originais).
+          Cada versão salva é independente e parte da base zerada (tabelas fonte originais).
         </p>
       </div>
       <div className="versions-actions">

@@ -56,14 +56,14 @@ def validate_script(source: str) -> dict:
 
 
 def build_readme_snippet(*, session_id: int, user_email: str, model_used: str) -> str:
-    return f"""# Script de Limpeza de Dados — Guia de Execução
+    return f"""# Script de Limpeza de Dados: Guia de Execução
 
 Gerado pelo Assistente de Pesquisa em Saúde
 ID da Sessão: {session_id}
 Autor: {user_email}
 Modelo: {model_used}
 
-## Pré-requisitos
+## Pré requisitos
 - Python 3.11+
 - pandas, SQLAlchemy, psycopg2-binary (ou driver de banco adequado)
 - Acesso aprovado ao banco de dados em ambiente seguro

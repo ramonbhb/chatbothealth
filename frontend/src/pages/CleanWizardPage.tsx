@@ -185,7 +185,7 @@ export default function CleanWizardPage() {
       await loadVersions(session.id);
       setSaveMessage(
         saveCurrent
-          ? 'Nova versão iniciada. Rascunho anterior salvo — explore os dados e planeje a partir da base zerada.'
+          ? 'Nova versão iniciada. Rascunho anterior salvo. Explore os dados e planeje a partir da base zerada.'
           : 'Nova versão iniciada a partir da base zerada.'
       );
     } catch (e) {
@@ -341,7 +341,7 @@ export default function CleanWizardPage() {
           <p className="muted">Opcionalmente, associe esta sessão de limpeza a uma sessão de documento de projeto.</p>
           <div className="wizard-actions">
             <button type="button" className="btn secondary" onClick={() => goToStep('select_dataset')}>Voltar</button>
-            <button type="button" onClick={() => goToStep('schema_explore')}>Pular — Explorar Dados</button>
+            <button type="button" onClick={() => goToStep('schema_explore')}>Pular e explorar dados</button>
           </div>
         </div>
       )}

@@ -50,7 +50,7 @@ Default: Gemini via LiteLLM. Set in `.env`:
 
 ```
 GEMINI_API_KEY=your-key
-LLM_MODEL=gemini/gemini-2.0-flash
+LLM_MODEL=gemini/gemini-3.5-flash
 ```
 
 For local models (Ollama):

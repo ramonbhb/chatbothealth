@@ -215,7 +215,7 @@ async def seed() -> None:
                         name="diagnosis_code",
                         data_type="VARCHAR(20)",
                         nullable=True,
-                        description="Código principal de diagnóstico CID-10",
+                        description="Código principal de diagnóstico CID 10",
                     ),
                 ]
             )

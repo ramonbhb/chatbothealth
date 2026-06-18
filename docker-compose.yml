@@ -23,7 +23,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://hra:hra_secret@db:5432/hra
       SECRET_KEY: ${SECRET_KEY:-dev-secret-change-in-production}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      LLM_MODEL: ${LLM_MODEL:-gemini/gemini-2.5-flash}
+      LLM_MODEL: ${LLM_MODEL:-gemini/gemini-3.5-flash}
       LLM_MODEL_LOCAL: ${LLM_MODEL_LOCAL:-ollama/llama3}
       LOCAL_MODEL_ENABLED: ${LOCAL_MODEL_ENABLED:-false}
       OLLAMA_API_BASE: ${OLLAMA_API_BASE:-http://host.docker.internal:11434}

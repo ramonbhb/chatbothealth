@@ -23,7 +23,7 @@ interface DatasetExplorerProps {
 }
 
 function formatCell(value: unknown): string {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) return 'n/d';
   return String(value);
 }
 
@@ -39,7 +39,7 @@ export function DatasetExplorer({ tables }: DatasetExplorerProps) {
         return (
           <details key={table.id} open>
             <summary>
-              <strong>{table.name}</strong> — {table.description}
+              <strong>{table.name}</strong>: {table.description}
             </summary>
 
             <h4 className="explorer-subheading">Estrutura</h4>

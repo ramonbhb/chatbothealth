@@ -34,7 +34,7 @@ export default function AdminPage() {
     <div className="page admin-page">
       <header className="header">
         <Link to="/">← Painel</Link>
-        <h1>Administração — Catálogo de Metadados</h1>
+        <h1>Administração: Catálogo de Metadados</h1>
       </header>
       {error && <p className="error">{error}</p>}
 

@@ -23,10 +23,10 @@ export const DOC_SECTION_HINTS: Record<string, string> = {
 };
 
 export const PROJECT_COLLECTION_GOALS = [
-  'Dados — fontes, coorte, variáveis e preparação',
-  'Métodos — plano de análise, modelos e validação',
-  'Artefatos — tabelas, gráficos, modelos e exportações',
-  'Fluxo — como a análise será executada',
+  'Dados: fontes, coorte, variáveis e preparação',
+  'Métodos: plano de análise, modelos e validação',
+  'Artefatos: tabelas, gráficos, modelos e exportações',
+  'Fluxo: como a análise será executada',
 ];
 
 export const DOC_STEPS = ['Importar / Início', 'Coleta Guiada', 'Revisão de Seções', 'Controle de Qualidade', 'Exportar'];

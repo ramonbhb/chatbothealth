@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://hra:hra_secret@db:5432/hra"
     exports_dir: str = "/app/exports"
 
-    llm_model: str = "gemini/gemini-2.5-flash"
+    llm_model: str = "gemini/gemini-3.5-flash"
     llm_model_local: str = "ollama/llama3"
     gemini_api_key: str = ""
     ollama_api_base: str = "http://host.docker.internal:11434"

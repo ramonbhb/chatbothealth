@@ -25,7 +25,7 @@ export function SchemaBrowser({ tables }: SchemaBrowserProps) {
       {tables.map((table) => (
         <details key={table.id} open>
           <summary>
-            <strong>{table.name}</strong> — {table.description}
+            <strong>{table.name}</strong>: {table.description}
           </summary>
           <table className="schema-table">
             <thead>

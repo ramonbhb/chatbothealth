@@ -10,7 +10,7 @@ from app.services.llm.json_utils import parse_json_object
 
 logger = logging.getLogger(__name__)
 
-# Gemini 2.5+ usa tokens de "pensamento" que podem esgotar max_tokens e devolver conteúdo vazio.
+# Gemini 2.5+ e 3.x usam tokens de "pensamento" que podem esgotar max_tokens e devolver conteúdo vazio.
 _GEMINI_REASONING_PREFIXES = ("gemini/gemini-2", "gemini/gemini-3", "gemini-2", "gemini-3")
 
 
@@ -116,9 +116,9 @@ class LLMGateway:
         raise RuntimeError(
             "O LLM retornou uma resposta vazia. "
             f"Modelo: {self.model}, finish_reason={last_finish_reason}. "
-            "Isso costuma ocorrer quando o Gemini 2.5 usa tokens de 'pensamento' e esgota o limite. "
+            "Isso costuma ocorrer quando o modelo usa tokens de 'pensamento' e esgota o limite. "
             "O backend já tenta desativar o reasoning automaticamente; se persistir, "
-            "tente LLM_MODEL=gemini/gemini-2.0-flash no .env ou verifique GET /api/llm/status."
+            "verifique GET /api/llm/status ou ajuste LLM_MODEL no .env."
         )
 
     async def stream(

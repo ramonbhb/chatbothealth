@@ -30,6 +30,7 @@ from app.services.wizards.orchestrator import (
     run_quality_check,
     split_full_text_into_sections,
 )
+from app.services.wizards.text_import import should_use_chunked_import
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -216,12 +217,16 @@ async def import_full_text(
 
     filled = sum(1 for v in sections.values() if v.strip())
     if filled == 0:
+        message = (
+            "Não foi possível extrair seções do texto longo. "
+            "Tente adicionar títulos de seção explícitos (ex.: Contexto, Objetivos, Métodos) "
+            "ou dividir o documento em partes menores."
+            if should_use_chunked_import(body.full_text)
+            else "Não foi possível extrair seções do texto. A resposta da IA estava vazia ou inválida."
+        )
         raise HTTPException(
             status_code=502,
-            detail={
-                "message": "Não foi possível extrair seções do texto. A resposta da IA estava vazia ou inválida.",
-                "debug": debug,
-            },
+            detail={"message": message, "debug": debug},
         )
 
     section_data = json.loads(session.section_data or "{}")

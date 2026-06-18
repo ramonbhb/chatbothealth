@@ -18,6 +18,16 @@ from app.services.llm.prompts import (
 )
 from app.services.llm.json_utils import coerce_section_value, parse_json_object
 from app.services.scriptgen.validator import validate_script
+from app.services.wizards.chat_context import (
+    CHAT_MAX_OUTPUT_TOKENS,
+    section_context_summary,
+    trim_chat_history,
+)
+from app.services.wizards.text_import import (
+    count_filled_sections,
+    should_use_chunked_import,
+    split_long_text_into_sections,
+)
 
 MAX_SAMPLE_ROWS = 10
 
@@ -47,7 +57,7 @@ async def get_schema_context(db: AsyncSession, dataset_id: int, *, include_sampl
 
     lines = [f"Conjunto: {dataset.name}", f"Descrição: {dataset.description}", ""]
     for table in dataset.tables:
-        lines.append(f"Tabela: {table.name} — {table.description}")
+        lines.append(f"Tabela: {table.name}: {table.description}")
         for col in table.columns:
             phi = " [PHI]" if col.is_phi else ""
             lines.append(
@@ -87,15 +97,15 @@ async def run_doc_intake(
             "content": (
                 f"Seção atual: {current_section} ({SECTION_LABELS.get(current_section, current_section)}). "
                 f"Objetivo da seção: {guidance} "
-                f"Seções existentes até agora: {json.dumps({k: v for k, v in section_data.items() if not k.startswith('_')})}"
+                f"Resumo das seções já preenchidas:\n{section_context_summary(section_data)}\n"
+                "Responda de forma breve: no máximo 3 a 5 frases e até 2 perguntas por turno."
             ),
         },
     ]
-    for msg in session.messages[-20:]:
-        messages.append({"role": msg.role, "content": msg.content})
+    messages.extend(trim_chat_history(session.messages))
     messages.append({"role": "user", "content": user_message})
 
-    reply, _, _ = await llm_gateway.complete(messages)
+    reply, _, _ = await llm_gateway.complete(messages, max_tokens=CHAT_MAX_OUTPUT_TOKENS)
     session.llm_model_used = llm_gateway.model
     return reply
 
@@ -112,7 +122,7 @@ async def extract_section_content(
             "role": "system",
             "content": (
                 f"Extraia e resuma o conteúdo da seção '{section_key}' ({label}) a partir da conversa. "
-                "Use apenas informações discutidas — não invente conteúdo. "
+                "Use apenas informações discutidas. Não invente conteúdo. "
                 "Retorne JSON: {\"content\": \"...\", \"complete\": true/false, \"missing\": [\"...\"]}"
             ),
         },
@@ -127,6 +137,11 @@ async def extract_section_content(
 
 
 async def split_full_text_into_sections(full_text: str) -> tuple[dict[str, str], str, dict]:
+    if should_use_chunked_import(full_text):
+        sections, debug = await split_long_text_into_sections(llm_gateway, full_text)
+        debug["model"] = llm_gateway.model
+        return sections, llm_gateway.model, debug
+
     section_spec = {
         key: SECTION_LABELS.get(key, key.replace("_", " ").title())
         for key in PROJECT_DOC_SECTIONS
@@ -135,7 +150,7 @@ async def split_full_text_into_sections(full_text: str) -> tuple[dict[str, str],
     system_content = (
         f"{DOC_SYSTEM_PROMPT}\n\n"
         "Divida o texto completo do documento do projeto do usuário em seções predefinidas. "
-        "Use APENAS o texto fornecido — não invente conteúdo. "
+        "Use APENAS o texto fornecido. Não invente conteúdo. "
         f"Rótulos das seções: {json.dumps(section_spec, indent=2)}. "
         f"Você DEVE retornar um único objeto JSON usando EXATAMENTE estas chaves snake_case: {keys_list}. "
         "Cada valor deve ser uma string com o texto extraído para essa seção. "
@@ -145,7 +160,7 @@ async def split_full_text_into_sections(full_text: str) -> tuple[dict[str, str],
         {"role": "system", "content": system_content},
         {"role": "user", "content": full_text},
     ]
-    result, raw_content, _, _ = await llm_gateway.complete_json(messages, max_tokens=8192)
+    result, raw_content, _, _ = await llm_gateway.complete_json(messages, max_tokens=16384)
 
     if "raw" in result and len(result) == 1:
         result = parse_json_object(str(result["raw"]))
@@ -174,11 +189,12 @@ async def split_full_text_into_sections(full_text: str) -> tuple[dict[str, str],
         sections[key] = coerce_section_value(value)
 
     debug = {
+        "strategy": "single_json",
         "model": llm_gateway.model,
         "raw_length": len(raw_content),
         "raw_preview": raw_content[:800],
         "parsed_keys": [k for k in result.keys() if not str(k).startswith("_")],
-        "filled_sections": sum(1 for v in sections.values() if v.strip()),
+        "filled_sections": count_filled_sections(sections),
         "input_length": len(full_text),
     }
     return sections, llm_gateway.model, debug
@@ -220,17 +236,21 @@ async def run_clean_discussion(
 ) -> str:
     schema_context = ""
     if session.dataset_id:
-        schema_context = await get_schema_context(db, session.dataset_id, include_samples=True)
+        # Amostras já foram apresentadas no kickoff; no chat basta a estrutura.
+        schema_context = await get_schema_context(db, session.dataset_id, include_samples=False)
 
     messages = [
         {"role": "system", "content": CLEAN_SYSTEM_PROMPT},
-        {"role": "system", "content": f"Estrutura e amostras do conjunto:\n{schema_context}"},
+        {"role": "system", "content": f"Estrutura do conjunto:\n{schema_context}"},
+        {
+            "role": "system",
+            "content": "Responda de forma breve: no máximo 3 a 5 frases e até 2 perguntas por turno.",
+        },
     ]
-    for msg in session.messages[-20:]:
-        messages.append({"role": msg.role, "content": msg.content})
+    messages.extend(trim_chat_history(session.messages))
     messages.append({"role": "user", "content": user_message})
 
-    reply, _, _ = await llm_gateway.complete(messages)
+    reply, _, _ = await llm_gateway.complete(messages, max_tokens=CHAT_MAX_OUTPUT_TOKENS)
     session.llm_model_used = llm_gateway.model
     return reply
 
@@ -246,7 +266,7 @@ async def run_clean_kickoff(db: AsyncSession, session: WizardSession) -> str:
         {"role": "system", "content": f"Estrutura e amostras do conjunto:\n{schema_context}"},
         {"role": "user", "content": "Por favor, abra nossa sessão de planejamento de limpeza e modelagem."},
     ]
-    reply, _, _ = await llm_gateway.complete(messages)
+    reply, _, _ = await llm_gateway.complete(messages, max_tokens=CHAT_MAX_OUTPUT_TOKENS)
     session.llm_model_used = llm_gateway.model
     return reply
 
@@ -267,8 +287,8 @@ async def generate_clean_script(
             "content": (
                 "Gere um script data_clean.py completo com base na conversa. "
                 "Use pandas e SQLAlchemy. Inclua uma função main(). "
-                "IMPORTANTE: leia sempre das tabelas-fonte originais do conjunto de dados (base zerada). "
-                "Não assuma que existe saída de limpeza anterior — cada execução parte do bruto. "
+                "IMPORTANTE: leia sempre das tabelas fonte originais do conjunto de dados (base zerada). "
+                "Não assuma que existe saída de limpeza anterior. Cada execução parte do bruto. "
                 "Retorne APENAS código Python, sem blocos markdown."
             ),
         },

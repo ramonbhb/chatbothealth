@@ -25,15 +25,25 @@ export function ChatPanel({ messages, onSend, disabled, placeholder }: ChatPanel
   return (
     <div className="chat-panel">
       <div className="chat-messages">
-        {messages.length === 0 && (
+        {messages.length === 0 && !sending && (
           <p className="chat-empty">Inicie a conversa. O assistente fará perguntas guiadas.</p>
         )}
         {messages.map((msg, i) => (
           <div key={i} className={`chat-msg ${msg.role}`}>
             <strong>{msg.role === 'user' ? 'Você' : 'Assistente'}</strong>
-            <p>{msg.content}</p>
+            <div className="chat-bubble">
+              <p>{msg.content}</p>
+            </div>
           </div>
         ))}
+        {sending && (
+          <div className="chat-msg assistant typing">
+            <strong>Assistente</strong>
+            <div className="chat-bubble">
+              <p>Preparando resposta…</p>
+            </div>
+          </div>
+        )}
       </div>
       <div className="chat-input">
         <textarea
@@ -50,7 +60,7 @@ export function ChatPanel({ messages, onSend, disabled, placeholder }: ChatPanel
           }}
         />
         <button onClick={handleSend} disabled={disabled || sending || !input.trim()}>
-          {sending ? 'Enviando...' : 'Enviar'}
+          {sending ? 'Aguardando…' : 'Enviar'}
         </button>
       </div>
     </div>

@@ -31,7 +31,7 @@ export default function LoginPage() {
         <p className="subtitle">Documentação guiada de projetos e limpeza de dados</p>
         <form onSubmit={handleSubmit}>
           <label>
-            E-mail
+            Email
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </label>
           <label>
